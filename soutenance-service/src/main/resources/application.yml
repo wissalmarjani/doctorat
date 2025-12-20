@@ -1,0 +1,21 @@
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+
+  retry:
+    instances:
+      userService:
+        maxAttempts: 3
+        waitDuration: 1000
+
+  ratelimiter:
+    instances:
+      userService:
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0

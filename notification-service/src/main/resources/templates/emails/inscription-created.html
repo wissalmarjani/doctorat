@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Créée</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #1e3a5f; margin-bottom: 20px; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #1e3a5f; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #1e3a5f; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #555; }
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; background-color: #d1ecf1; color: #0c5460; }
+        .steps { margin: 25px 0; }
+        .step { display: flex; align-items: flex-start; margin: 15px 0; }
+        .step-number { width: 30px; height: 30px; background-color: #1e3a5f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0; }
+        .step-content { flex: 1; }
+        .step-content h4 { margin: 0 0 5px 0; color: #1e3a5f; }
+        .step-content p { margin: 0; color: #666; font-size: 14px; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #1e3a5f; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎓 Portail Doctorat</h1>
+        <div class="subtitle">Confirmation de création de dossier</div>
+    </div>
+
+    <div class="content">
+        <p class="greeting">Bonjour <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span>,</p>
+
+        <p>Nous avons bien reçu votre demande d'inscription au programme doctoral. Votre dossier a été créé avec succès.</p>
+
+        <div class="info-box">
+            <h3>📋 Récapitulatif de votre dossier</h3>
+            <p><strong>N° de dossier :</strong> <span th:text="${inscriptionId}">12345</span></p>
+            <p><strong>Campagne :</strong> <span th:text="${campagneNom}">2024-2025</span></p>
+            <p><strong>Sujet de thèse :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+            <p><strong>Statut :</strong> <span class="status-badge">Dossier créé</span></p>
+        </div>
+
+        <h3 style="color: #1e3a5f;">📌 Prochaines étapes</h3>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>Compléter votre dossier</h4>
+                    <p>Assurez-vous d'avoir téléversé tous les documents requis (CV, diplômes, lettre de motivation...)</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>Soumettre votre dossier</h4>
+                    <p>Une fois complet, soumettez votre dossier pour validation</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>Validation</h4>
+                    <p>Votre directeur de thèse puis l'administration examineront votre dossier</p>
+                </div>
+            </div>
+        </div>
+
+        <p>Vous pouvez suivre l'avancement de votre dossier à tout moment en vous connectant au portail.</p>
+    </div>
+
+    <div class="footer">
+        <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+        <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+        <p>© 2025 ENSET - Tous droits réservés</p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation Requise</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #fd7e14 0%, #e85d04 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #1e3a5f; margin-bottom: 20px; }
+        .action-icon { text-align: center; font-size: 60px; margin: 20px 0; }
+        .alert-box { background-color: #fff3cd; border-left: 4px solid #fd7e14; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .alert-box h3 { margin: 0 0 10px 0; color: #856404; font-size: 16px; }
+        .alert-box p { margin: 5px 0; color: #856404; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #1e3a5f; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #1e3a5f; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #555; }
+        .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #fd7e14 0%, #e85d04 100%); color: #ffffff !important; text-decoration: none; border-radius: 5px; font-weight: 600; margin: 20px 0; }
+        .actions { background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .actions h3 { color: #004085; margin-top: 0; }
+        .actions ul { margin: 0; padding-left: 20px; }
+        .actions li { margin: 10px 0; color: #004085; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #fd7e14; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Action Requise</h1>
+            <div class="subtitle">Un dossier nécessite votre validation</div>
+        </div>
+        
+        <div class="content">
+            <div class="action-icon">📋</div>
+            
+            <p class="greeting">Bonjour <span th:text="${directeurNom != null ? directeurNom : recipientName}">Professeur</span>,</p>
+            
+            <div class="alert-box">
+                <h3>🔔 Validation en attente</h3>
+                <p>Un nouveau dossier nécessite votre attention et votre validation.</p>
+            </div>
+            
+            <div class="info-box">
+                <h3>📄 Informations du dossier</h3>
+                <p><strong>Doctorant(e) :</strong> <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span></p>
+                <p><strong>Sujet :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+                <p th:if="${inscriptionId != null}"><strong>N° Inscription :</strong> <span th:text="${inscriptionId}">12345</span></p>
+                <p th:if="${soutenanceId != null}"><strong>N° Soutenance :</strong> <span th:text="${soutenanceId}">12345</span></p>
+            </div>
+            
+            <div class="actions">
+                <h3>📝 Actions possibles</h3>
+                <ul>
+                    <li><strong>Valider</strong> - Approuver le dossier si tout est conforme</li>
+                    <li><strong>Demander des modifications</strong> - Si des corrections sont nécessaires</li>
+                    <li><strong>Rejeter</strong> - En cas de non-conformité majeure</li>
+                </ul>
+            </div>
+            
+            <p style="text-align: center;">
+                <a href="#" class="button">Accéder au Portail</a>
+            </p>
+            
+            <p>Merci de traiter cette demande dans les meilleurs délais afin de ne pas retarder le parcours du doctorant.</p>
+            
+            <p>Cordialement,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+            <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+            <p>© 2025 ENSET - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>

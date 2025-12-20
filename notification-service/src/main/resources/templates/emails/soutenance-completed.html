@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Félicitations Docteur !</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%); color: #333; padding: 40px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+        .header .subtitle { margin-top: 10px; font-size: 16px; }
+        .content { padding: 30px; }
+        .greeting { font-size: 20px; color: #1e3a5f; margin-bottom: 20px; }
+        .celebration { text-align: center; font-size: 80px; margin: 20px 0; }
+        .congrats-box { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; border-radius: 10px; margin: 20px 0; text-align: center; }
+        .congrats-box h2 { margin: 0 0 10px 0; font-size: 24px; }
+        .congrats-box p { margin: 0; font-size: 16px; opacity: 0.95; }
+        .info-box { background-color: #f8f9fa; border-left: 4px solid #ffd700; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #1e3a5f; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #555; }
+        .next-steps { background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .next-steps h3 { color: #004085; margin-top: 0; }
+        .next-steps ul { margin: 0; padding-left: 20px; }
+        .next-steps li { margin: 10px 0; color: #004085; }
+        .quote { font-style: italic; text-align: center; color: #666; padding: 20px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 20px 0; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #ffd700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 FÉLICITATIONS DOCTEUR !</h1>
+            <div class="subtitle">Vous avez brillamment soutenu votre thèse</div>
+        </div>
+        
+        <div class="content">
+            <div class="celebration">🎉🎓🏆</div>
+            
+            <p class="greeting">Cher(e) Docteur <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span>,</p>
+            
+            <div class="congrats-box">
+                <h2>Toutes nos félicitations !</h2>
+                <p>Vous avez accompli un parcours remarquable et obtenu le titre de Docteur.</p>
+            </div>
+            
+            <p>C'est avec une immense fierté que nous vous félicitons pour la <strong>réussite de votre soutenance de thèse</strong>. Ce moment marque l'aboutissement de plusieurs années de travail acharné, de recherche et de persévérance.</p>
+            
+            <div class="info-box">
+                <h3>📋 Votre thèse</h3>
+                <p><strong>Titre :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+            </div>
+            
+            <div class="quote">
+                "Le doctorat n'est pas seulement un diplôme, c'est la preuve que vous pouvez contribuer de manière originale à la connaissance humaine."
+            </div>
+            
+            <div class="next-steps">
+                <h3>📌 Prochaines démarches</h3>
+                <ul>
+                    <li>Récupérer votre attestation de réussite auprès de l'administration</li>
+                    <li>Déposer la version finale corrigée de votre thèse</li>
+                    <li>Procéder aux formalités d'enregistrement du diplôme</li>
+                    <li>Mettre à jour votre profil professionnel (LinkedIn, etc.)</li>
+                </ul>
+            </div>
+            
+            <p>Nous vous souhaitons une brillante carrière et beaucoup de succès dans vos projets futurs.</p>
+            
+            <p>Avec nos chaleureuses félicitations,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+            <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+            <p>© 2025 ENSET - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>

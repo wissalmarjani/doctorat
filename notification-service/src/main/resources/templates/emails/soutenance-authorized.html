@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soutenance Autorisée</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #28a745; margin-bottom: 20px; }
+        .celebration { text-align: center; font-size: 60px; margin: 20px 0; }
+        .info-box { background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #155724; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #155724; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 16px; font-weight: 600; background-color: #28a745; color: white; }
+        .next-steps { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .next-steps h3 { color: #1e3a5f; margin-top: 0; }
+        .next-steps ol { margin: 0; padding-left: 20px; }
+        .next-steps li { margin: 10px 0; color: #555; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #28a745; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Soutenance Autorisée !</h1>
+            <div class="subtitle">Vous êtes autorisé(e) à soutenir votre thèse</div>
+        </div>
+        
+        <div class="content">
+            <div class="celebration">🎉🎓🎉</div>
+            
+            <p class="greeting">Félicitations <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span> !</p>
+            
+            <p>Nous avons le plaisir de vous informer que <strong>votre soutenance de thèse a été officiellement autorisée</strong> !</p>
+            
+            <div class="info-box">
+                <h3>📋 Informations</h3>
+                <p><strong>N° de demande :</strong> <span th:text="${soutenanceId}">12345</span></p>
+                <p><strong>Sujet de thèse :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+                <p><strong>Statut :</strong> <span class="status-badge">AUTORISÉE</span></p>
+            </div>
+            
+            <div class="next-steps">
+                <h3>📌 Prochaines étapes</h3>
+                <ol>
+                    <li><strong>Planification :</strong> L'administration va fixer la date, l'heure et le lieu de votre soutenance</li>
+                    <li><strong>Convocations :</strong> Les membres du jury recevront leurs convocations officielles</li>
+                    <li><strong>Préparation :</strong> Préparez votre présentation et votre défense</li>
+                    <li><strong>Documents :</strong> Assurez-vous d'avoir tous les documents nécessaires le jour J</li>
+                </ol>
+            </div>
+            
+            <p>Vous recevrez une notification dès que la date de soutenance sera fixée.</p>
+            
+            <p>Nous vous souhaitons une excellente préparation et beaucoup de succès pour votre soutenance !</p>
+            
+            <p>Cordialement,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+            <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+            <p>© 2025 ENSET - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>

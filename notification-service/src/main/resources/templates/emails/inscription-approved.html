@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Approuvée</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #28a745; margin-bottom: 20px; }
+        .success-icon { text-align: center; font-size: 60px; margin: 20px 0; }
+        .info-box { background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #155724; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #155724; }
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; background-color: #28a745; color: white; }
+        .next-steps { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .next-steps h3 { color: #1e3a5f; margin-top: 0; }
+        .next-steps ul { margin: 0; padding-left: 20px; }
+        .next-steps li { margin: 10px 0; color: #555; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #28a745; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎉 Félicitations !</h1>
+        <div class="subtitle">Votre inscription a été approuvée</div>
+    </div>
+
+    <div class="content">
+        <div class="success-icon">✅</div>
+
+        <p class="greeting">Cher(e) <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span>,</p>
+
+        <p>Nous avons le plaisir de vous informer que <strong>votre inscription au programme doctoral a été approuvée</strong> !</p>
+
+        <div class="info-box">
+            <h3>🎓 Détails de votre inscription</h3>
+            <p><strong>N° de dossier :</strong> <span th:text="${inscriptionId}">12345</span></p>
+            <p><strong>Sujet de thèse :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+            <p><strong>Statut :</strong> <span class="status-badge">APPROUVÉE</span></p>
+        </div>
+
+        <div class="next-steps">
+            <h3>📌 Prochaines étapes</h3>
+            <ul>
+                <li>Récupérez votre attestation d'inscription sur le portail</li>
+                <li>Contactez votre directeur de thèse pour planifier vos premiers travaux</li>
+                <li>Consultez le règlement du programme doctoral</li>
+                <li>Inscrivez-vous aux formations doctorales obligatoires</li>
+            </ul>
+        </div>
+
+        <p>Nous vous souhaitons une excellente réussite dans votre parcours doctoral !</p>
+
+        <p>Cordialement,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+    </div>
+
+    <div class="footer">
+        <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+        <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+        <p>© 2025 ENSET - Tous droits réservés</p>
+    </div>
+</div>
+</body>
+</html>

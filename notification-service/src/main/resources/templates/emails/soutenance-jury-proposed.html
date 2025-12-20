@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jury Proposé</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #1e3a5f; margin-bottom: 20px; }
+        .info-box { background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #0c5460; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #0c5460; }
+        .jury-box { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .jury-box h3 { color: #1e3a5f; margin-top: 0; border-bottom: 2px solid #17a2b8; padding-bottom: 10px; }
+        .jury-member { display: flex; align-items: center; padding: 12px; margin: 8px 0; background-color: white; border-radius: 5px; border-left: 3px solid #17a2b8; }
+        .jury-member .role { font-weight: 600; color: #17a2b8; min-width: 120px; }
+        .jury-member .name { color: #333; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #17a2b8; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👥 Jury Proposé</h1>
+            <div class="subtitle">La composition du jury a été soumise</div>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Bonjour <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span>,</p>
+            
+            <p>Votre directeur de thèse a proposé la <strong>composition du jury</strong> pour votre soutenance. Cette proposition est maintenant soumise à validation.</p>
+            
+            <div class="info-box">
+                <h3>📋 Demande de soutenance</h3>
+                <p><strong>N° de demande :</strong> <span th:text="${soutenanceId}">12345</span></p>
+                <p><strong>Sujet de thèse :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+            </div>
+            
+            <div class="jury-box">
+                <h3>🎓 Composition du Jury proposée</h3>
+                <div class="jury-member" th:if="${presidentJury != null}">
+                    <span class="role">Président :</span>
+                    <span class="name" th:text="${presidentJury}">Pr. Nom Président</span>
+                </div>
+                <div class="jury-member" th:if="${rapporteur1 != null}">
+                    <span class="role">Rapporteur 1 :</span>
+                    <span class="name" th:text="${rapporteur1}">Pr. Nom Rapporteur 1</span>
+                </div>
+                <div class="jury-member" th:if="${rapporteur2 != null}">
+                    <span class="role">Rapporteur 2 :</span>
+                    <span class="name" th:text="${rapporteur2}">Pr. Nom Rapporteur 2</span>
+                </div>
+            </div>
+            
+            <p>Les rapporteurs vont recevoir votre manuscrit de thèse pour évaluation. Une fois leurs rapports favorables reçus, votre soutenance pourra être autorisée et planifiée.</p>
+            
+            <p>Cordialement,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+            <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+            <p>© 2025 ENSET - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>

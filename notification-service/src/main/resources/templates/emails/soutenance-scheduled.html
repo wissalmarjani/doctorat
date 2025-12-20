@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soutenance Planifiée</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: #ffffff; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .header .subtitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; color: #1e3a5f; margin-bottom: 20px; }
+        .calendar-icon { text-align: center; font-size: 60px; margin: 20px 0; }
+        .date-box { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 25px; border-radius: 10px; margin: 20px 0; text-align: center; }
+        .date-box .date { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+        .date-box .location { font-size: 16px; opacity: 0.95; }
+        .info-box { background-color: #e7f3ff; border-left: 4px solid #007bff; padding: 15px 20px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .info-box h3 { margin: 0 0 10px 0; color: #004085; font-size: 16px; }
+        .info-box p { margin: 5px 0; color: #004085; }
+        .checklist { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .checklist h3 { color: #1e3a5f; margin-top: 0; }
+        .checklist-item { display: flex; align-items: flex-start; margin: 12px 0; }
+        .checklist-item .icon { margin-right: 10px; font-size: 18px; }
+        .checklist-item .text { flex: 1; }
+        .footer { background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 5px 0; font-size: 13px; color: #666; }
+        .footer a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Soutenance Planifiée</h1>
+            <div class="subtitle">La date de votre soutenance est fixée</div>
+        </div>
+        
+        <div class="content">
+            <div class="calendar-icon">🗓️</div>
+            
+            <p class="greeting">Bonjour <span th:text="${doctorantPrenom + ' ' + doctorantNom}">Prénom Nom</span>,</p>
+            
+            <p>La date de votre soutenance de thèse est maintenant <strong>officiellement fixée</strong> !</p>
+            
+            <div class="date-box">
+                <div class="date" th:text="${dateSoutenance}">15/03/2025 à 14:00</div>
+                <div class="location">
+                    <span th:text="${lieu}">ENSET Mohammedia</span> - <span th:text="${salle}">Salle de Conférence</span>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>📋 Informations de la soutenance</h3>
+                <p><strong>N° de demande :</strong> <span th:text="${soutenanceId}">12345</span></p>
+                <p><strong>Sujet de thèse :</strong> <span th:text="${sujetThese}">Sujet de la thèse</span></p>
+            </div>
+            
+            <div class="checklist">
+                <h3>✅ À préparer pour le jour J</h3>
+                <div class="checklist-item">
+                    <span class="icon">💻</span>
+                    <span class="text">Votre présentation (30-45 minutes recommandées)</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="icon">📄</span>
+                    <span class="text">Copies du manuscrit pour les membres du jury</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="icon">🎯</span>
+                    <span class="text">Préparation aux questions du jury</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="icon">👔</span>
+                    <span class="text">Tenue appropriée pour l'occasion</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="icon">⏰</span>
+                    <span class="text">Arriver 30 minutes avant l'heure prévue</span>
+                </div>
+            </div>
+            
+            <p>Nous vous souhaitons une excellente soutenance et beaucoup de succès !</p>
+            
+            <p>Cordialement,<br>
+            <strong>L'équipe du Portail Doctorat</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le Portail Doctorat.</p>
+            <p>Pour toute question, contactez l'administration à <a href="mailto:doctorat@enset.ma">doctorat@enset.ma</a></p>
+            <p>© 2025 ENSET - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+</html>
