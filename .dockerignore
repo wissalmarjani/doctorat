@@ -1,0 +1,48 @@
+# ============================================================
+# .dockerignore - Fichiers à exclure du build Docker
+# ============================================================
+
+# Dossiers de build
+target/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.old
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (si frontend)
+node_modules/
+npm-debug.log
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# Documentation
+*.md
+docs/
+
+# Tests
+src/test/

@@ -96,7 +96,7 @@ public class SoutenanceEventPublisher {
      * Publie des invitations pour tous les membres du jury d'une soutenance
      */
     public void publishAllJuryInvitations(Soutenance soutenance, String doctorantNom, List<MembreJury> membresJury) {
-        log.info("📤 Publication invitations pour {} membres du jury - Soutenance ID: {}", 
+        log.info("📤 Publication invitations pour {} membres du jury - Soutenance ID: {}",
                 membresJury.size(), soutenance.getId());
 
         for (MembreJury membre : membresJury) {
@@ -104,12 +104,17 @@ public class SoutenanceEventPublisher {
                     .soutenanceId(soutenance.getId())
                     .membreJuryEmail(membre.getEmail())
                     .membreJuryNom(membre.getNom() + " " + membre.getPrenom())
-                    .roleJury(membre.getRole().name())  // RoleJury enum -> String
+                    .roleJury(membre.getRole().name())
                     .doctorantNom(doctorantNom)
-                    .sujetThese(soutenance.getSujetThese())
-                    .dateSoutenance(soutenance.getDateSoutenance())
-                    .lieu(soutenance.getLieu())
-                    .salle(soutenance.getSalle())
+                    .sujetThese(soutenance.getTitreThese())
+                    // ↓↓↓ CONVERSION LocalDate -> LocalDateTime ↓↓↓
+                    .dateSoutenance(soutenance.getDateSoutenance() != null
+                            ? soutenance.getDateSoutenance().atTime(soutenance.getHeureSoutenance() != null
+                            ? soutenance.getHeureSoutenance()
+                            : java.time.LocalTime.of(9, 0))
+                            : null)
+                    .lieu(soutenance.getLieuSoutenance())
+                    .salle(soutenance.getLieuSoutenance())
                     .build();
 
             publishJuryInvitation(event);
