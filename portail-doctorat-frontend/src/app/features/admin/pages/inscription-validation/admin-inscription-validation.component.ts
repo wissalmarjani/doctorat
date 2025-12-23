@@ -1,184 +1,113 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { InscriptionService } from '@core/services/inscription.service';
+import { AuthService } from '@core/services/auth.service';
+import { UserService } from '@core/services/user.service'; // Assurez-vous d'avoir ce service
 import { Inscription, StatutInscription } from '@core/models/inscription.model';
-import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 
 @Component({
     selector: 'app-admin-inscription-validation',
     standalone: true,
-    imports: [CommonModule, RouterLink, MainLayoutComponent],
+    imports: [CommonModule, FormsModule],
     template: `
-        <app-main-layout>
-            <div class="page-container p-4">
-
-                <!-- EN-TÊTE -->
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <div>
-                        <h2 class="fw-bold text-dark mb-1">Validation Administrative</h2>
-                        <p class="text-muted mb-0">Contrôle final des dossiers validés par les directeurs.</p>
-                    </div>
-
-                    <button class="btn btn-light text-primary fw-bold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2"
-                            (click)="loadInscriptions()"
-                            [disabled]="isLoading()">
-                        <span *ngIf="isLoading()" class="spinner-border spinner-border-sm"></span>
-                        <i *ngIf="!isLoading()" class="bi bi-arrow-clockwise"></i>
-                        Actualiser
-                    </button>
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Validation des Inscriptions</h2>
+                    <p class="text-muted">
+                        Espace de validation
+                        @if (isAdmin()) { <span class="badge bg-danger">ADMINISTRATION</span> }
+                        @else { <span class="badge bg-info text-dark">DIRECTION DE THÈSE</span> }
+                    </p>
                 </div>
+                <button (click)="loadInscriptions()" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-clockwise"></i> Actualiser
+                </button>
+            </div>
 
-                <!-- CONTENU -->
-                @if (isLoading()) {
-                    <!-- CHARGEMENT -->
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status"></div>
-                        <p class="mt-3 text-muted">Récupération des dossiers...</p>
-                    </div>
-                } @else if (inscriptions().length === 0) {
+            <!-- SPINNER -->
+            @if (isLoading()) {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Chargement des dossiers...</p>
+                </div>
+            }
 
-                    <!-- LISTE VIDE (Nettoyée : Plus d'icône buggée, espace réduit) -->
-                    <div class="card border-0 shadow-sm rounded-4 text-center py-5 fade-in">
-                        <div class="card-body">
-                            <h4 class="fw-bold text-dark mb-2">Tout est à jour !</h4>
-                            <p class="text-muted mb-4">Aucun dossier en attente de validation administrative.</p>
-                            <button class="btn btn-primary rounded-pill px-4 shadow-sm" (click)="loadInscriptions()">
-                                Vérifier à nouveau
-                            </button>
-                        </div>
-                    </div>
+            @else if (inscriptionsEnAttente().length === 0) {
+                <div class="alert alert-success text-center py-4">
+                    <i class="bi bi-check-circle-fill fs-1 text-success d-block mb-3"></i>
+                    <h4>Aucun dossier en attente</h4>
+                </div>
+            }
 
-                } @else {
+            @else {
+                <div class="list-group list-group-flush shadow-sm rounded">
+                    @for (inscription of inscriptionsEnAttente(); track inscription.id) {
+                        <div class="list-group-item p-4 mb-3 border rounded">
+                            <div class="row">
+                                <!-- COLONNE GAUCHE -->
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-secondary me-2">#{{ inscription.id }}</span>
+                                        <h5 class="mb-0 fw-bold">
+                                            <!-- Affichage du nom récupéré ou de l'ID par défaut -->
+                                            {{ inscription.doctorantNom ? (inscription.doctorantNom + ' ' + inscription.doctorantPrenom) : ('Candidat ID: ' + inscription.doctorantId) }}
+                                        </h5>
+                                    </div>
 
-                    <!-- TABLEAU DES DOSSIERS -->
-                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden fade-in">
+                                    <p class="text-muted mb-2">
+                                        <i class="bi bi-mortarboard me-1"></i> <strong>Sujet :</strong> {{ inscription.sujetThese }}
+                                    </p>
 
-                        <!-- Header Tableau -->
-                        <div class="card-header bg-white py-3 border-bottom ps-4">
-                            <div class="d-flex align-items-center">
-                                <h5 class="mb-0 fw-bold text-primary">
-                                    <i class="bi bi-file-earmark-text me-2"></i>Dossiers en attente
-                                </h5>
-                                <span class="badge bg-primary-subtle text-primary rounded-pill ms-3">
-                  {{ inscriptions().length }}
-                </span>
+                                    <div class="mt-3">
+                                        <span class="badge bg-light text-dark border me-2"><i class="bi bi-file-pdf me-1"></i>CV</span>
+                                        <span class="badge bg-light text-dark border me-2"><i class="bi bi-file-pdf me-1"></i>Diplôme</span>
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-file-pdf me-1"></i>Lettre</span>
+                                    </div>
+                                </div>
+
+                                <!-- COLONNE DROITE (Actions) -->
+                                <div class="col-md-4 border-start ps-md-4 mt-3 mt-md-0">
+                  <textarea class="form-control mb-2" rows="2"
+                            placeholder="Commentaire (requis pour rejet)..."
+                            [(ngModel)]="commentaires[inscription.id]"></textarea>
+
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button class="btn btn-outline-danger" (click)="rejeter(inscription)">Rejeter</button>
+                                        <button class="btn btn-success" (click)="valider(inscription)">Valider</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">Candidat</th>
-                                    <th class="text-uppercase small fw-bold text-muted">Sujet de Thèse</th>
-                                    <th class="text-uppercase small fw-bold text-muted">Encadrement</th>
-                                    <th class="text-uppercase small fw-bold text-muted">Date Validation Dir.</th>
-                                    <th class="text-end pe-4 text-uppercase small fw-bold text-muted">Action</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-
-                                    @for (ins of inscriptions(); track ins.id) {
-                                        <tr>
-                                            <!-- COLONNE CANDIDAT -->
-                                            <td class="ps-4">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-circle bg-gradient-purple text-white me-3 shadow-sm">
-                                                        {{ ins.doctorantNom?.charAt(0) || 'D' }}
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-bold text-dark">{{ ins.doctorantNom || 'Nom inconnu' }}</div>
-                                                        <div class="small text-muted font-monospace">ID: {{ ins.doctorantId }}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <!-- COLONNE SUJET -->
-                                            <td>
-                                                <div class="text-dark mb-1 text-truncate" style="max-width: 250px;" title="{{ ins.sujetThese }}">
-                                                    {{ ins.sujetThese }}
-                                                </div>
-                                            </td>
-
-                                            <!-- COLONNE ENCADREMENT -->
-                                            <td>
-                        <span class="badge bg-light text-secondary border">
-                          <i class="bi bi-person-badge me-1"></i> Dir. ID {{ ins.directeurId }}
-                        </span>
-                                            </td>
-
-                                            <!-- COLONNE DATE -->
-                                            <td>
-                                                <div class="d-flex align-items-center text-muted">
-                                                    <i class="bi bi-calendar3 me-2"></i>
-                                                    {{ ins.dateValidationDirecteur | date:'dd MMM yyyy' }}
-                                                </div>
-                                            </td>
-
-                                            <!-- COLONNE ACTIONS -->
-                                            <td class="text-end pe-4">
-                                                <div class="d-flex justify-content-end gap-2">
-
-                                                    <!-- Valider -->
-                                                    <button class="btn btn-success btn-sm px-3 shadow-sm rounded-pill d-flex align-items-center gap-1"
-                                                            (click)="valider(ins.id)"
-                                                            title="Valider et Générer Attestation">
-                                                        <i class="bi bi-check-lg"></i> Valider
-                                                    </button>
-
-                                                    <!-- Rejeter -->
-                                                    <button class="btn btn-outline-danger btn-sm px-3 shadow-sm rounded-pill d-flex align-items-center gap-1"
-                                                            (click)="rejeter(ins.id)"
-                                                            title="Rejeter le dossier">
-                                                        <i class="bi bi-x-lg"></i> Refuser
-                                                    </button>
-
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                }
-            </div>
-        </app-main-layout>
-    `,
-    styles: [`
-      /* AVATAR */
-      .avatar-circle {
-        width: 40px; height: 40px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 1rem;
-      }
-      .bg-gradient-purple { background: linear-gradient(135deg, #a855f7 0%, #d8b4fe 100%); }
-
-      /* TABLEAU */
-      .table thead th {
-        border-bottom: 2px solid #f1f5f9;
-        background-color: #f8fafc;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        padding-top: 1rem; padding-bottom: 1rem;
-      }
-      .table tbody td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; }
-
-      /* BADGES */
-      .bg-primary-subtle { background-color: #e0f2fe !important; color: #0284c7 !important; }
-
-      /* ANIMATION */
-      .fade-in { animation: fadeIn 0.4s ease-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    `]
+                    }
+                </div>
+            }
+        </div>
+    `
 })
 export class AdminInscriptionValidationComponent implements OnInit {
-    inscriptions = signal<Inscription[]>([]);
-    isLoading = signal(true);
 
-    constructor(private inscriptionService: InscriptionService) {}
+    allInscriptions = signal<Inscription[]>([]);
+    isLoading = signal(true);
+    commentaires: { [key: number]: string } = {};
+
+    isAdmin = this.authService.isAdmin;
+    isDirecteur = this.authService.isDirecteur;
+
+    // Filtre les inscriptions selon le rôle de la personne connectée
+    inscriptionsEnAttente = computed(() => {
+        const list = this.allInscriptions();
+        if (this.isAdmin()) return list.filter(i => i.statut === StatutInscription.EN_ATTENTE_ADMIN);
+        else if (this.isDirecteur()) return list.filter(i => i.statut === StatutInscription.EN_ATTENTE_DIRECTEUR);
+        return [];
+    });
+
+    constructor(
+        private inscriptionService: InscriptionService,
+        private authService: AuthService,
+        private userService: UserService
+    ) {}
 
     ngOnInit() {
         this.loadInscriptions();
@@ -186,40 +115,80 @@ export class AdminInscriptionValidationComponent implements OnInit {
 
     loadInscriptions() {
         this.isLoading.set(true);
-        this.inscriptionService.getByStatut(StatutInscription.VALIDE_DIRECTEUR).subscribe({
+
+        // 1. On récupère la liste brute (avec seulement doctorantId)
+        this.inscriptionService.getAllInscriptions().subscribe({
             next: (data) => {
-                this.inscriptions.set(data);
-                this.isLoading.set(false);
+                const inscriptionsList = [...data];
+
+                if (inscriptionsList.length === 0) {
+                    this.allInscriptions.set([]);
+                    this.isLoading.set(false);
+                    return;
+                }
+
+                // 2. Pour chaque inscription, on va chercher le nom du candidat
+                let loadedCount = 0;
+                inscriptionsList.forEach(insc => {
+                    this.userService.getUserById(insc.doctorantId).subscribe({
+                        next: (user) => {
+                            // C'est ici qu'on "hydrate" l'objet
+                            insc.doctorantNom = user.nom;
+                            insc.doctorantPrenom = user.prenom;
+
+                            loadedCount++;
+                            if (loadedCount === inscriptionsList.length) {
+                                this.allInscriptions.set(inscriptionsList);
+                                this.isLoading.set(false);
+                            }
+                        },
+                        error: () => {
+                            // Si on ne trouve pas le user, on continue quand même
+                            loadedCount++;
+                            if (loadedCount === inscriptionsList.length) {
+                                this.allInscriptions.set(inscriptionsList);
+                                this.isLoading.set(false);
+                            }
+                        }
+                    });
+                });
             },
-            error: (err) => {
-                console.error("Erreur chargement:", err);
-                this.isLoading.set(false);
-            }
+            error: () => this.isLoading.set(false)
         });
     }
 
-    valider(id: number) {
-        if(confirm("Confirmer la validation administrative ?\n\nCela finalisera l'inscription et générera l'attestation.")) {
-            this.inscriptionService.validerParAdmin(id, "Dossier conforme").subscribe({
-                next: () => {
-                    alert("Inscription finalisée avec succès !");
-                    this.loadInscriptions();
-                },
-                error: () => alert("Erreur technique lors de la validation.")
-            });
-        }
+    valider(inscription: Inscription) {
+        if (!confirm('Confirmer la validation ?')) return;
+        const commentaire = this.commentaires[inscription.id] || '';
+
+        const obs = this.isAdmin()
+            ? this.inscriptionService.validerParAdmin(inscription.id, commentaire)
+            : this.inscriptionService.validerParDirecteur(inscription.id, commentaire);
+
+        obs.subscribe({
+            next: () => {
+                alert('Validé avec succès');
+                this.loadInscriptions();
+            },
+            error: () => alert('Erreur lors de la validation')
+        });
     }
 
-    rejeter(id: number) {
-        const motif = prompt("Veuillez indiquer le motif du rejet (ex: Diplôme manquant) :");
-        if (motif) {
-            this.inscriptionService.rejeterParAdmin(id, motif).subscribe({
-                next: () => {
-                    alert("Dossier rejeté.");
-                    this.loadInscriptions();
-                },
-                error: () => alert("Erreur lors du rejet.")
-            });
-        }
+    rejeter(inscription: Inscription) {
+        const commentaire = this.commentaires[inscription.id] || '';
+        if (!commentaire.trim()) { alert('Commentaire obligatoire pour le rejet.'); return; }
+        if (!confirm('Rejeter ce dossier ?')) return;
+
+        const obs = this.isAdmin()
+            ? this.inscriptionService.rejeterParAdmin(inscription.id, commentaire)
+            : this.inscriptionService.rejeterParDirecteur(inscription.id, commentaire);
+
+        obs.subscribe({
+            next: () => {
+                alert('Rejeté avec succès');
+                this.loadInscriptions();
+            },
+            error: () => alert('Erreur lors du rejet')
+        });
     }
 }

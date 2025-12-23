@@ -34,7 +34,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
-    // ================== SECURITY FILTER CHAIN ==================
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -42,19 +41,20 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-
                         // 🔓 ENDPOINTS PUBLICS
+                        // L'ordre est important : les plus spécifiques d'abord
+                        .requestMatchers("/api/auth/register-with-files").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(
-                                "/api/auth/**",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // 🔴 SOLUTION : Autoriser TOUT sur /api/users/** pour débloquer Angular
+                        // 🔴 TEMPORAIRE : Users publics pour test (à retirer en prod)
                         .requestMatchers("/api/users/**").permitAll()
 
-                        // 🔐 Autres endpoints nécessitant authentification
+                        // 🔐 Le reste nécessite une authentification
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
@@ -66,48 +66,42 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ================== CORS ==================
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // Autoriser le frontend Angular
         configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(
-                Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-        );
+
+        // Autoriser toutes les méthodes HTTP
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // Autoriser tous les headers (notamment Authorization et Content-Type)
         configuration.setAllowedHeaders(List.of("*"));
+
+        // Exposer le header Authorization au frontend
         configuration.setExposedHeaders(List.of("Authorization"));
+
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
         return source;
     }
 
-    // ================== AUTH PROVIDER ==================
     @Bean
     public AuthenticationProvider authenticationProvider() {
-
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-
         return authProvider;
     }
 
-    // ================== AUTH MANAGER ==================
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config
-    ) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ================== PASSWORD ENCODER ==================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
-import { Role } from '@core/models/user.model';
+// import { Role } from '@core/models/user.model'; // Pas strictement nécessaire si on utilise des strings, mais bonne pratique
 
 @Component({
   selector: 'app-login',
@@ -194,6 +194,22 @@ import { Role } from '@core/models/user.model';
     .invalid-feedback {
       font-size: 0.8rem; color: #dc2626; margin-top: 0.25rem;
     }
+
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   `]
 })
 export class LoginComponent {
@@ -229,15 +245,21 @@ export class LoginComponent {
 
     this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
-        // Logique de redirection
         const roleRecu = response.role;
 
+        // 1. CANDIDAT -> Salle d'attente
         if (roleRecu === 'CANDIDAT') {
           this.router.navigate(['/auth/pending-approval']);
         }
+        // 2. ADMIN -> Dashboard Admin
         else if (roleRecu === 'ADMIN') {
-          this.router.navigate(['/admin/users']);
+          this.router.navigate(['/admin']); // Mieux vaut rediriger vers la racine du module admin
         }
+        // 3. DOCTORANT -> Dashboard (Le Guard s'occupera de bloquer s'il n'a pas fini l'inscription)
+        else if (roleRecu === 'DOCTORANT') {
+          this.router.navigate(['/dashboard']);
+        }
+        // 4. Par défaut (Directeur, etc.)
         else {
           const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
           this.router.navigateByUrl(returnUrl);

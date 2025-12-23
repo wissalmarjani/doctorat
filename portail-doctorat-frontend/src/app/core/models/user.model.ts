@@ -25,6 +25,7 @@ export interface AuthResponse {
   nom: string;
   prenom: string;
   role: string;
+  telephone: string;
   message: string;
 }
 

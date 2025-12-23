@@ -29,10 +29,21 @@ export class AuthService {
       private router: Router
   ) {}
 
+  // Inscription simple (JSON uniquement - utilisé par l'admin pour créer des profs par ex)
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authUrl}/auth/register`, request)
         .pipe(
             tap(response => this.handleAuthResponse(response)),
+            catchError(this.handleError)
+        );
+  }
+
+  // ✅ NOUVELLE MÉTHODE : Inscription Candidat avec Fichiers (FormData)
+  // Utilise l'endpoint spécifique 'register-with-files' défini dans le Backend
+  registerWithFiles(formData: FormData): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.authUrl}/auth/register-with-files`, formData)
+        .pipe(
+            // On ne connecte pas automatiquement l'utilisateur ici car il doit attendre validation
             catchError(this.handleError)
         );
   }
@@ -73,7 +84,6 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  // ✅ CORRECTION ICI : Ajout de "as Role" pour corriger l'erreur TS2345
   hasRole(role: Role | Role[]): boolean {
     const userRole = this.currentUserSignal()?.role;
     if (!userRole) return false;
@@ -99,7 +109,8 @@ export class AuthService {
       nom: response.nom,
       prenom: response.prenom,
       role: response.role,
-      enabled: true
+      enabled: true,
+      telephone: response.telephone
     };
 
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));

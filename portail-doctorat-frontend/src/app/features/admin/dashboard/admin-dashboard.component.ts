@@ -27,20 +27,22 @@ import { StatutInscription } from '@core/models/inscription.model';
                 <!-- GRILLE DE STATISTIQUES -->
                 <div class="row g-4">
 
-                    <!-- 1. CANDIDATS (Orange) -->
+                    <!-- 1. COMPTES CANDIDATS (Orange) -->
+                    <!-- Ce sont les gens inscrits sur la plateforme mais qui n'ont pas forcément encore soumis de dossier -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-orange-subtle text-orange">
                                 <i class="bi bi-person-lines-fill"></i>
                             </div>
                             <div class="info-content">
-                                <span class="label">Candidatures en attente</span>
+                                <span class="label">Comptes Candidats</span>
                                 <div class="value">{{ stats().candidats }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2. DOCTORANTS (Cyan - NOUVEAU) -->
+                    <!-- 2. DOCTORANTS INSCRITS (Cyan) -->
+                    <!-- Ceux qui ont fini tout le processus (ADMIS) -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-cyan-subtle text-cyan">
@@ -67,13 +69,14 @@ import { StatutInscription } from '@core/models/inscription.model';
                     </div>
 
                     <!-- 4. DOSSIERS A VALIDER (Violet) -->
+                    <!-- Le plus important pour l'admin : les dossiers EN_ATTENTE_ADMIN -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-purple-subtle text-purple">
                                 <i class="bi bi-files"></i>
                             </div>
                             <div class="info-content">
-                                <span class="label">Dossiers à valider</span>
+                                <span class="label">Dossiers à traiter</span>
                                 <div class="value">{{ stats().inscriptions }}</div>
                             </div>
                         </div>
@@ -98,7 +101,6 @@ import { StatutInscription } from '@core/models/inscription.model';
         </app-main-layout>
     `,
     styles: [`
-      /* STYLE DES CARTES (Non cliquables, rectangulaires, propres) */
       .info-card {
         background: white;
         border-radius: 16px;
@@ -111,62 +113,20 @@ import { StatutInscription } from '@core/models/inscription.model';
         height: 100%;
         transition: transform 0.2s;
       }
-
-      /* Petit effet au survol juste pour le feedback visuel */
-      .info-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-      }
-
-      /* TYPOGRAPHIE */
-      .label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #94a3b8;
-        margin-bottom: 0.25rem;
-        display: block;
-      }
-
-      .value {
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: #1e293b;
-        line-height: 1.2;
-      }
-
-      /* ICONES */
-      .icon-box {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        flex-shrink: 0;
-      }
-
-      /* PALETTE DE COULEURS DOUCES */
+      .info-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+      .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 0.25rem; display: block; }
+      .value { font-size: 1.75rem; font-weight: 800; color: #1e293b; line-height: 1.2; }
+      .icon-box { width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; flex-shrink: 0; }
       .bg-orange-subtle { background-color: #fff7ed; } .text-orange { color: #ea580c; }
       .bg-purple-subtle { background-color: #f3e8ff; } .text-purple { color: #9333ea; }
       .bg-blue-subtle { background-color: #eff6ff; } .text-blue { color: #2563eb; }
       .bg-green-subtle { background-color: #f0fdf4; } .text-green { color: #16a34a; }
-      /* Nouvelle couleur pour les Doctorants */
       .bg-cyan-subtle { background-color: #ecfeff; } .text-cyan { color: #0891b2; }
-
-      /* RESPONSIVE */
-      @media (max-width: 768px) {
-        .info-card { padding: 1rem; }
-        .icon-box { width: 50px; height: 50px; font-size: 1.5rem; }
-        .value { font-size: 1.5rem; }
-      }
+      @media (max-width: 768px) { .info-card { padding: 1rem; } .icon-box { width: 50px; height: 50px; font-size: 1.5rem; } .value { font-size: 1.5rem; } }
     `]
 })
 export class AdminDashboardComponent implements OnInit {
     today = new Date();
-    // Ajout de 'doctorants' dans le signal
     stats = signal({ candidats: 0, inscriptions: 0, directeurs: 0, doctorants: 0 });
 
     constructor(
@@ -179,20 +139,24 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     loadStats() {
-        // 1. Candidats
+        // 1. Candidats (Utilisateurs avec rôle CANDIDAT)
         this.userService.getUsersByRole('CANDIDAT').subscribe(u =>
             this.stats.update(s => ({ ...s, candidats: u.length }))
         );
+
         // 2. Directeurs
         this.userService.getUsersByRole('DIRECTEUR_THESE').subscribe(u =>
             this.stats.update(s => ({ ...s, directeurs: u.length }))
         );
-        // 3. Doctorants (NOUVEAU)
+
+        // 3. Doctorants (Ceux qui sont ADMIS)
         this.userService.getUsersByRole('DOCTORANT').subscribe(u =>
             this.stats.update(s => ({ ...s, doctorants: u.length }))
         );
-        // 4. Dossiers à valider
-        this.inscriptionService.getByStatut(StatutInscription.VALIDE_DIRECTEUR).subscribe(i =>
+
+        // 4. Dossiers à valider par l'admin
+        // ✅ CORRECTION ICI : On utilise EN_ATTENTE_ADMIN
+        this.inscriptionService.getByStatut(StatutInscription.EN_ATTENTE_ADMIN.toString()).subscribe(i =>
             this.stats.update(s => ({ ...s, inscriptions: i.length }))
         );
     }

@@ -1,140 +1,113 @@
 package ma.enset.userservice.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.userservice.dto.*;
 import ma.enset.userservice.services.AuthService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200") // Soyez spécifique sur l'origine
 public class AuthController {
 
     private final AuthService authService;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Inscription d'un nouvel utilisateur
-     * POST /api/auth/register
+     * INSCRIPTION SIMPLE (JSON)
      */
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        // ✅ CORRECTION ICI : getUsername() remplacé par getMatricule()
-        log.info("📝 Requête d'inscription reçue pour matricule: {}", request.getMatricule());
-
+        log.info("📝 Inscription JSON pour matricule: {}", request.getMatricule());
         try {
             AuthResponse response = authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(
-                    AuthResponse.builder()
-                            .message(e.getMessage())
-                            .build()
+                    AuthResponse.builder().message(e.getMessage()).build()
             );
         }
     }
 
     /**
-     * Connexion d'un utilisateur
-     * POST /api/auth/login
+     * ✅ INSCRIPTION AVEC FICHIERS (Multipart)
+     * Correction : "candidat" doit correspondre au formData.append('candidat', ...) du Frontend
+     */
+    @PostMapping(value = "/register-with-files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<AuthResponse> registerWithFiles(
+            @RequestPart("candidat") String userJson, // ⚠️ Changé de "data" à "candidat"
+            @RequestPart("cv") MultipartFile cv,
+            @RequestPart("diplome") MultipartFile diplome,
+            @RequestPart(value = "lettre", required = false) MultipartFile lettre
+    ) throws IOException {
+
+        log.info("📎 Inscription multipart reçue");
+
+        // 1. Désérialisation du JSON
+        RegisterRequest request = objectMapper.readValue(userJson, RegisterRequest.class);
+        log.info("   - Candidat: {}", request.getMatricule());
+        log.info("   - CV Taille: {}", cv.getSize());
+
+        // 2. Appel du service
+        AuthResponse response = authService.registerWithFiles(request, cv, diplome, lettre);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * CONNEXION
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Ici on garde getUsername() car LoginRequest utilise un champ générique "username"
-        // qui contiendra le matricule saisi par l'utilisateur
-        log.info("🔐 Requête de connexion reçue pour: {}", request.getUsername());
-
+        log.info("🔐 Connexion pour: {}", request.getUsername());
         try {
-            AuthResponse response = authService.login(request);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(authService.login(request));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    AuthResponse.builder()
-                            .message(e.getMessage())
-                            .build()
+                    AuthResponse.builder().message(e.getMessage()).build()
             );
         }
     }
 
     /**
-     * Rafraîchir le token
-     * POST /api/auth/refresh
-     */
-    @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    AuthResponse.builder()
-                            .message("Refresh token requis")
-                            .build()
-            );
-        }
-
-        try {
-            AuthResponse response = authService.refreshToken(refreshToken);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    AuthResponse.builder()
-                            .message(e.getMessage())
-                            .build()
-            );
-        }
-    }
-
-    /**
-     * Récupérer le profil de l'utilisateur connecté
-     * GET /api/auth/me
+     * PROFIL
      */
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // userDetails.getUsername() retourne le matricule (grâce à l'entité User)
-        UserDTO user = authService.getCurrentUser(userDetails.getUsername());
-        return ResponseEntity.ok(user);
+        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        return ResponseEntity.ok(authService.getCurrentUser(userDetails.getUsername()));
     }
 
     /**
-     * Changer le mot de passe
-     * POST /api/auth/change-password
+     * CHANGER MOT DE PASSE
      */
     @PostMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody ChangePasswordRequest request) {
-
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Non authentifié"));
-        }
-
-        try {
-            authService.changePassword(userDetails.getUsername(), request);
-            return ResponseEntity.ok(Map.of("message", "Mot de passe changé avec succès"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", e.getMessage()));
-        }
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        authService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe changé avec succès"));
     }
 
     /**
-     * Vérifier si le token est valide
-     * GET /api/auth/validate
+     * VALIDER TOKEN
      */
     @GetMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken(Authentication authentication) {
@@ -145,18 +118,14 @@ public class AuthController {
                     "authorities", authentication.getAuthorities()
             ));
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("valid", false));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("valid", false));
     }
 
     /**
-     * Déconnexion
-     * POST /api/auth/logout
+     * LOGOUT
      */
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout() {
-        return ResponseEntity.ok(Map.of(
-                "message", "Déconnexion réussie. Veuillez supprimer le token côté client."
-        ));
+        return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
     }
 }

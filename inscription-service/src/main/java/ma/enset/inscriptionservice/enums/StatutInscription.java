@@ -1,10 +1,11 @@
 package ma.enset.inscriptionservice.enums;
 
 public enum StatutInscription {
-    BROUILLON,           // En cours de saisie
-    SOUMIS,              // Soumis par le doctorant
-    VALIDE_DIRECTEUR,    // Validé par le directeur de thèse
-    VALIDE_ADMIN,        // Validé par l'administration (inscrit)
-    REJETE_DIRECTEUR,    // Rejeté par le directeur
-    REJETE_ADMIN         // Rejeté par l'admin
+    BROUILLON,              // Créé mais pas envoyé
+    EN_ATTENTE_ADMIN,       // 1. Soumis par le candidat, en attente de l'Admin
+    EN_ATTENTE_DIRECTEUR,   // 2. Validé par Admin, en attente du Directeur
+    ADMIS,                  // 3. Validé par Directeur (Le candidat devient Doctorant)
+
+    REJETE_ADMIN,           // Refusé par l'Admin (Fin de parcours ou modification requise)
+    REJETE_DIRECTEUR        // Refusé par le Directeur (Fin de parcours ou modification requise)
 }

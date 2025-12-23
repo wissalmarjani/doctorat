@@ -1,27 +1,34 @@
 export interface Inscription {
   id: number;
   doctorantId: number;
-  directeurId: number;
+  directeurId?: number;
+
+  // ✅ CORRECTION : Utilisation de l'interface Campagne définie plus bas
   campagne?: Campagne;
+
   sujetThese: string;
   laboratoireAccueil: string;
   collaborationExterne?: string;
+
   statut: StatutInscription;
   typeInscription: TypeInscription;
-  anneeInscription: number;
+
+  // ✅ CORRECTION : Ajouté car utilisé dans inscription-detail.component.html
+  anneeInscription?: number;
   datePremiereInscription?: string;
+
   commentaireDirecteur?: string;
   commentaireAdmin?: string;
-  dateValidationDirecteur?: string;
-  dateValidationAdmin?: string;
+
+  // Champs optionnels pour l'affichage (hydratés par le UserService)
+  doctorantNom?: string;
+  doctorantPrenom?: string;
+
   createdAt: string;
   updatedAt?: string;
-
-  // Infos utilisateur (ajoutées par le frontend)
-  doctorantNom?: string;
-  directeurNom?: string;
 }
 
+// ✅ CORRECTION : L'interface Campagne était manquante
 export interface Campagne {
   id: number;
   titre: string;
@@ -34,30 +41,20 @@ export interface Campagne {
 
 export enum StatutInscription {
   BROUILLON = 'BROUILLON',
+
+  // ✅ IMPORTANT : Je remets 'SOUMIS' pour éviter les erreurs dans vos anciens composants.
+  // Vous devrez progressivement remplacer 'SOUMIS' par 'EN_ATTENTE_ADMIN' dans vos fichiers.
   SOUMIS = 'SOUMIS',
-  VALIDE_DIRECTEUR = 'VALIDE_DIRECTEUR',
-  VALIDE_ADMIN = 'VALIDE_ADMIN',
-  REJETE_DIRECTEUR = 'REJETE_DIRECTEUR',
-  REJETE_ADMIN = 'REJETE_ADMIN'
+
+  EN_ATTENTE_ADMIN = 'EN_ATTENTE_ADMIN',
+  EN_ATTENTE_DIRECTEUR = 'EN_ATTENTE_DIRECTEUR',
+  ADMIS = 'ADMIS',
+
+  REJETE_ADMIN = 'REJETE_ADMIN',
+  REJETE_DIRECTEUR = 'REJETE_DIRECTEUR'
 }
 
 export enum TypeInscription {
   PREMIERE_INSCRIPTION = 'PREMIERE_INSCRIPTION',
   REINSCRIPTION = 'REINSCRIPTION'
-}
-
-export interface CreateInscriptionRequest {
-  doctorantId: number;
-  directeurId: number;
-
-  // MODIFICATION ICI : On remplace campagneId par un objet pour matcher le Backend
-  campagne: { id: number };
-
-  sujetThese: string;
-  laboratoireAccueil: string;
-  collaborationExterne?: string;
-  typeInscription: TypeInscription;
-
-  // AJOUT ICI : Pour accepter la liste vide envoyée par le formulaire
-  documents?: any[];
 }

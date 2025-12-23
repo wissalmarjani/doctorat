@@ -25,13 +25,12 @@ public class Inscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // L'ID du doctorant est obligatoire (c'est lui qui crée le dossier)
+    // L'ID du doctorant (Candidat) qui crée le dossier
     @NotNull(message = "L'ID du doctorant est obligatoire")
     @Column(name = "doctorant_id", nullable = false)
     private Long doctorantId;
 
-    // ✅ CORRECTION : Pas de @NotNull ici.
-    // Ce champ est optionnel à la création. L'Admin l'assignera plus tard.
+    // L'ID du directeur sera assigné/validé plus tard dans le processus
     @Column(name = "directeur_id")
     private Long directeurId;
 
@@ -44,6 +43,7 @@ public class Inscription {
     @Column(nullable = false)
     private TypeInscription typeInscription;
 
+    // Statut par défaut : BROUILLON (sera passé à EN_ATTENTE_ADMIN lors de la soumission)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutInscription statut = StatutInscription.BROUILLON;
@@ -64,24 +64,28 @@ public class Inscription {
     @Column(name = "date_premiere_inscription")
     private LocalDate datePremiereInscription;
 
-    // Relation avec les documents (CV, Diplômes, etc.)
+    // Relation avec les documents (CV, Diplômes, Lettre de motiv...)
     @OneToMany(mappedBy = "inscription", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> documents = new ArrayList<>();
 
-    // Commentaires pour le workflow de validation
+    // --- WORKFLOW VALIDATION ---
+
+    // Commentaires en cas de rejet ou validation
     @Column(name = "commentaire_directeur", length = 1000)
     private String commentaireDirecteur;
 
     @Column(name = "commentaire_admin", length = 1000)
     private String commentaireAdmin;
 
+    // Dates de validation
     @Column(name = "date_validation_directeur")
     private LocalDateTime dateValidationDirecteur;
 
     @Column(name = "date_validation_admin")
     private LocalDateTime dateValidationAdmin;
 
-    // Champs d'audit
+    // --- AUDIT ---
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -99,7 +103,7 @@ public class Inscription {
         updatedAt = LocalDateTime.now();
     }
 
-    // Méthode utilitaire pour ajouter un document et maintenir la relation bidirectionnelle
+    // Helper pour ajouter un document facilement
     public void addDocument(Document doc) {
         documents.add(doc);
         doc.setInscription(this);

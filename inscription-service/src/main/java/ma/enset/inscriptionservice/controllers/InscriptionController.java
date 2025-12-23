@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,7 @@ import java.util.Map;
 @RequestMapping("/api/inscriptions")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // À configurer plus finement en prod (Gateway)
 public class InscriptionController {
 
     private final InscriptionService inscriptionService;
@@ -49,6 +50,26 @@ public class InscriptionController {
         log.info("REST request to get inscriptions by doctorant: {}", doctorantId);
         List<Inscription> inscriptions = inscriptionService.getInscriptionsByDoctorant(doctorantId);
         return ResponseEntity.ok(inscriptions);
+    }
+
+    /**
+     * ✅ NOUVEL ENDPOINT CRUCIAL POUR LE FRONTEND (GUARD)
+     * Récupère la dernière inscription (la plus récente) d'un doctorant.
+     * Utilise l'ID auto-incrémenté pour déterminer la récence.
+     */
+    @GetMapping("/doctorant/{doctorantId}/latest")
+    public ResponseEntity<Inscription> getLatestInscriptionByDoctorant(@PathVariable Long doctorantId) {
+        log.info("REST request to get LATEST inscription for doctorant: {}", doctorantId);
+
+        // 1. On récupère toutes les inscriptions du doctorant
+        List<Inscription> inscriptions = inscriptionService.getInscriptionsByDoctorant(doctorantId);
+
+        // 2. On cherche celle avec l'ID le plus grand (la plus récente)
+        // Si la liste est vide, on renvoie 404 (ce qui déclenchera la redirection vers le formulaire coté Angular)
+        return inscriptions.stream()
+                .max(Comparator.comparing(Inscription::getId))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/directeur/{directeurId}")
@@ -136,7 +157,6 @@ public class InscriptionController {
         return ResponseEntity.ok("Inscription Service is running!");
     }
 
-    // ✅ CETTE MÉTHODE CORRIGE L'ERREUR 404
     @PutMapping("/{id}/soumettre")
     public ResponseEntity<Inscription> soumettreInscription(@PathVariable Long id) {
         log.info("REST request to submit (soumettre) inscription with id: {}", id);
