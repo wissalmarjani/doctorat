@@ -43,12 +43,10 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                 </div>
                             </div>
 
+                            <!-- MODIFICATION ICI : Suppression de l'icône enveloppe -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold small text-uppercase text-muted">Email Professionnel</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" class="form-control" formControlName="email" placeholder="professeur@univ.ma">
-                                </div>
+                                <input type="email" class="form-control" formControlName="email" placeholder="professeur@univ.ma">
                             </div>
 
                             <div class="row g-3 mb-4">
@@ -65,7 +63,7 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                             <div class="d-flex justify-content-end gap-2 pt-3 border-top">
                                 <button type="button" class="btn btn-light border" routerLink="/admin/users">Annuler</button>
                                 <button type="submit" class="btn btn-primary px-4 shadow-sm" [disabled]="directeurForm.invalid || isLoading()">
-                                    <!-- Utilisation de @if (Angular 17+) ou *ngIf -->
+                                    <!-- Utilisation de *ngIf -->
                                     <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-2"></span>
                                     Créer le compte
                                 </button>
@@ -107,22 +105,20 @@ export class DirectorFormComponent {
 
         const formValues = this.directeurForm.value;
 
-        // Construction de l'objet utilisateur
         const newUser = {
             nom: formValues.nom,
             prenom: formValues.prenom,
             email: formValues.email,
             password: formValues.password,
-            matricule: formValues.username,  // Le backend attend 'matricule'
-            username: formValues.username,   // On garde username au cas où
-            telephone: "",                   // Champ non présent dans le formulaire, on met vide
+            matricule: formValues.username,
+            username: formValues.username,
+            telephone: "",
             role: 'DIRECTEUR_THESE',
             enabled: true
         };
 
         console.log("Envoi du nouveau directeur :", newUser);
 
-        // ✅ CORRECTION ICI : Ajout de "as any" pour éviter l'erreur TS2345 (ID manquant)
         this.userService.createUser(newUser as any).subscribe({
             next: () => {
                 alert("Compte Directeur créé avec succès !");

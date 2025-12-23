@@ -2,92 +2,46 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
-import { 
-  Derogation, 
-  EligibiliteReinscription, 
-  DemandeDerogationRequest,
-  StatutDerogation 
-} from '../models/derogation.model';
+import { Derogation, EligibiliteReinscription } from '../models/derogation.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DerogationService {
-  private readonly baseUrl = `${environment.apiUrl}/derogations`;
+  // Pointe vers le port 8082 (Inscription Service qui gère les dérogations)
+  // ou 8080 (Gateway)
+  private apiUrl = `${environment.inscriptionServiceUrl}/derogations`;
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Vérifier l'éligibilité à la réinscription
-   */
+  // --- PARTIE DOCTORANT ---
+
   verifierEligibilite(doctorantId: number): Observable<EligibiliteReinscription> {
-    return this.http.get<EligibiliteReinscription>(`${this.baseUrl}/eligibilite/${doctorantId}`);
+    return this.http.get<EligibiliteReinscription>(`${this.apiUrl}/eligibilite/${doctorantId}`);
   }
 
-  /**
-   * Obtenir l'année de doctorat et les alertes
-   */
-  getAnneeDoctorat(doctorantId: number): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/annee/${doctorantId}`);
+  demanderDerogation(data: any): Observable<Derogation> {
+    return this.http.post<Derogation>(this.apiUrl, data);
   }
 
-  /**
-   * Demander une dérogation
-   */
-  demanderDerogation(request: DemandeDerogationRequest): Observable<Derogation> {
-    return this.http.post<Derogation>(this.baseUrl, request);
-  }
-
-  /**
-   * Récupérer mes dérogations (doctorant)
-   */
   getMesDerogations(doctorantId: number): Observable<Derogation[]> {
-    return this.http.get<Derogation[]>(`${this.baseUrl}/doctorant/${doctorantId}`);
+    return this.http.get<Derogation[]>(`${this.apiUrl}/doctorant/${doctorantId}`);
   }
 
-  /**
-   * Récupérer une dérogation par ID
-   */
-  getById(id: number): Observable<Derogation> {
-    return this.http.get<Derogation>(`${this.baseUrl}/${id}`);
+  // --- PARTIE ADMIN (C'est ce qui manquait !) ---
+
+  /** Récupérer TOUTES les dérogations */
+  getAllDerogations(): Observable<Derogation[]> {
+    return this.http.get<Derogation[]>(this.apiUrl);
   }
 
-  /**
-   * Récupérer toutes les dérogations en attente (admin)
-   */
-  getDerogationsEnAttente(): Observable<Derogation[]> {
-    return this.http.get<Derogation[]>(`${this.baseUrl}/en-attente`);
+  /** Valider une dérogation */
+  validerDerogation(id: number, commentaire: string): Observable<Derogation> {
+    return this.http.put<Derogation>(`${this.apiUrl}/${id}/valider`, { commentaire });
   }
 
-  /**
-   * Récupérer les dérogations par statut
-   */
-  getByStatut(statut: StatutDerogation): Observable<Derogation[]> {
-    return this.http.get<Derogation[]>(`${this.baseUrl}/statut/${statut}`);
-  }
-
-  /**
-   * Approuver une dérogation
-   */
-  approuver(id: number, decideurId: number, commentaire?: string): Observable<Derogation> {
-    const params: any = { decideurId };
-    if (commentaire) params.commentaire = commentaire;
-    return this.http.put<Derogation>(`${this.baseUrl}/${id}/approuver`, null, { params });
-  }
-
-  /**
-   * Refuser une dérogation
-   */
-  refuser(id: number, decideurId: number, commentaire: string): Observable<Derogation> {
-    return this.http.put<Derogation>(`${this.baseUrl}/${id}/refuser`, null, {
-      params: { decideurId, commentaire }
-    });
-  }
-
-  /**
-   * Obtenir les statistiques
-   */
-  getStatistiques(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/stats`);
+  /** Refuser une dérogation */
+  refuserDerogation(id: number, commentaire: string): Observable<Derogation> {
+    return this.http.put<Derogation>(`${this.apiUrl}/${id}/refuser`, { commentaire });
   }
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router'; // ✅ Router ajouté
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 import { AuthService } from '@core/services/auth.service';
 import { InscriptionService } from '@core/services/inscription.service';
@@ -12,13 +12,12 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
   standalone: true,
   imports: [CommonModule, RouterLink, MainLayoutComponent, AdminDashboardComponent],
   template: `
-    <!-- ROUTAGE INTELLIGENT DU DASHBOARD -->
-
+    <!-- CAS 1 : C'EST UN ADMIN -->
     @if (isAdmin()) {
-      <!-- CAS 1 : C'EST UN ADMIN -->
       <app-admin-dashboard></app-admin-dashboard>
-    } @else {
-      <!-- CAS 2 : DOCTORANT OU DIRECTEUR -->
+    }
+    
+    @else {
       <app-main-layout>
         <div class="dashboard-container p-4">
 
@@ -161,7 +160,8 @@ export class DashboardComponent implements OnInit {
 
   constructor(
       public authService: AuthService,
-      private inscriptionService: InscriptionService
+      private inscriptionService: InscriptionService,
+      private router: Router // ✅ Injection du Router pour la redirection
   ) {}
 
   ngOnInit(): void {
@@ -177,9 +177,18 @@ export class DashboardComponent implements OnInit {
     if (!user) return;
 
     if (this.isDoctorant()) {
-      this.inscriptionService.getByDoctorant(user.id).subscribe(data =>
-          this.stats.update(s => ({ ...s, inscriptions: data.length }))
-      );
+      // ✅ LOGIQUE CRITIQUE : Redirection si 0 inscriptions
+      this.inscriptionService.getByDoctorant(user.id).subscribe({
+        next: (data) => {
+          this.stats.update(s => ({ ...s, inscriptions: data.length }));
+
+          if (data.length === 0) {
+            console.log("🚀 Première connexion : Redirection vers la création de dossier.");
+            this.router.navigate(['/inscriptions/nouvelle']);
+          }
+        },
+        error: (err) => console.error(err)
+      });
     }
     else if (this.isDirecteur()) {
       this.inscriptionService.getInscriptionsByDirecteur(user.id).subscribe(data => {

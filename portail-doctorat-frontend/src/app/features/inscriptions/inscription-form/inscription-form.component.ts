@@ -17,7 +17,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
   template: `
     <app-main-layout>
       <div class="page-container">
-        
+
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div>
@@ -25,9 +25,9 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
               <i class="bi bi-arrow-left"></i> Retour aux inscriptions
             </a>
             <h2 class="fw-bold mb-0">
-              {{ isEditMode() ? 'Modifier mon dossier' : 'Nouvelle Candidature' }}
+              {{ isEditMode() ? 'Modifier mon dossier' : 'Constitution du Dossier' }}
             </h2>
-            <p class="text-muted">Remplissez le formulaire ci-dessous pour postuler au cycle doctoral.</p>
+            <p class="text-muted">Veuillez compléter votre dossier d'inscription au cycle doctoral.</p>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
         <!-- FORMULAIRE PRINCIPAL -->
         @if (eligibilite()?.eligible !== false) {
           <form [formGroup]="inscriptionForm" (ngSubmit)="onSubmit()">
-            
+
             <!-- BLOC 1 : INFORMATIONS PERSONNELLES (Lecture seule) -->
             <div class="card shadow-sm border-0 mb-4">
               <div class="card-header bg-white py-3">
@@ -82,7 +82,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
                 <h5 class="mb-0 text-primary"><i class="bi bi-mortarboard me-2"></i>Projet de Thèse</h5>
               </div>
               <div class="card-body">
-                
+
                 @if (errorMessage()) {
                   <div class="alert alert-danger mb-3">{{ errorMessage() }}</div>
                 }
@@ -110,8 +110,8 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
 
                 <div class="mb-3">
                   <label class="form-label fw-bold">Sujet de thèse *</label>
-                  <textarea class="form-control" rows="3" formControlName="sujetThese" 
-                    placeholder="Intitulé complet du sujet de recherche..."></textarea>
+                  <textarea class="form-control" rows="3" formControlName="sujetThese"
+                            placeholder="Intitulé complet du sujet de recherche..."></textarea>
                 </div>
 
                 <div class="row g-3 mb-3">
@@ -124,7 +124,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
                     <input type="text" class="form-control" formControlName="collaborationExterne" placeholder="Entreprise ou organisme (Optionnel)">
                   </div>
                 </div>
-                
+
                 <div class="alert alert-info py-2 small">
                   <i class="bi bi-info-circle me-1"></i> Le directeur de thèse sera assigné par l'administration après étude du dossier.
                 </div>
@@ -139,11 +139,11 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
               <div class="card-body">
                 <div class="alert alert-light border mb-3">
                   <i class="bi bi-info-circle-fill text-info me-2"></i>
-                  Veuillez téléverser : <strong>CV, Diplômes, Lettre de motivation, CIN.</strong> (PDF ou Images, Max 10Mo).
+                  Veuillez téléverser les documents PDF/JPG requis (CV, Diplômes, CIN).
                 </div>
 
                 <div class="mb-3">
-                  <label class="form-label fw-bold">Sélectionner les fichiers</label>
+                  <label class="form-label fw-bold">Ajouter des fichiers</label>
                   <input type="file" class="form-control" multiple (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png">
                 </div>
 
@@ -157,7 +157,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
                           {{ file.name }}
                           <span class="text-muted small ms-2">({{ (file.size / 1024 / 1024) | number:'1.2-2' }} MB)</span>
                         </div>
-                        
+
                         <!-- Indicateur de statut -->
                         @if (isUploaded(file.name)) {
                           <span class="badge bg-success"><i class="bi bi-check"></i> Envoyé</span>
@@ -168,7 +168,7 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
                     }
                   </ul>
                 } @else {
-                    <div class="text-muted small fst-italic ps-1">Aucun document ajouté.</div>
+                  <div class="text-muted small fst-italic ps-1">Aucun document ajouté.</div>
                 }
               </div>
             </div>
@@ -178,15 +178,15 @@ import { EligibiliteReinscription } from '@core/models/derogation.model';
               <button type="button" class="btn btn-lg btn-outline-secondary px-4" routerLink="/inscriptions">
                 Annuler
               </button>
-              <button type="submit" class="btn btn-lg btn-primary px-4" 
-                [disabled]="isLoading() || inscriptionForm.invalid || isUploading">
-                
+              <button type="submit" class="btn btn-lg btn-primary px-4"
+                      [disabled]="isLoading() || inscriptionForm.invalid || isUploading">
+
                 @if (isLoading()) {
                   <span class="spinner-border spinner-border-sm me-2"></span> Traitement...
                 } @else if (isUploading) {
                   <span class="spinner-border spinner-border-sm me-2"></span> Envoi fichiers...
                 } @else {
-                  <i class="bi bi-send me-2"></i> 
+                  <i class="bi bi-send me-2"></i>
                   {{ isEditMode() ? 'Mettre à jour' : 'Soumettre le dossier' }}
                 }
               </button>
@@ -218,7 +218,7 @@ export class InscriptionFormComponent implements OnInit {
   isUploading = false;
   uploadedFileNames: string[] = [];
 
-  // Infos user (pour affichage lecture seule)
+  // Infos user
   currentUser = this.authService.currentUser();
   currentUserName = `${this.currentUser?.prenom} ${this.currentUser?.nom}`;
   currentUserEmail = this.currentUser?.email;
@@ -239,7 +239,7 @@ export class InscriptionFormComponent implements OnInit {
       sujetThese: ['', [Validators.required, Validators.minLength(20)]],
       laboratoireAccueil: ['', Validators.required],
       collaborationExterne: ['']
-      // ❌ CHAMP DIRECTEUR SUPPRIMÉ
+      // ❌ PAS DE CHAMP DIRECTEUR
     });
   }
 
@@ -289,7 +289,7 @@ export class InscriptionFormComponent implements OnInit {
     });
   }
 
-  // --- GESTION FICHIERS (UPLOAD) ---
+  // --- GESTION FICHIERS ---
 
   onFileSelected(event: any): void {
     const files = event.target.files;
@@ -298,13 +298,12 @@ export class InscriptionFormComponent implements OnInit {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-
-        if (validTypes.includes(file.type)) {
+        // Validation simple du type
+        if (['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
           this.selectedFiles.push(file);
           this.uploadFile(file);
         } else {
-          alert(`Format invalide pour "${file.name}". PDF ou Images uniquement.`);
+          alert(`Format invalide pour "${file.name}".`);
         }
       }
     }
@@ -317,6 +316,7 @@ export class InscriptionFormComponent implements OnInit {
           this.uploadedDocIds.push(response.id);
           this.uploadedFileNames.push(file.name);
 
+          // Si tout est fini
           if (this.uploadedFileNames.length === this.selectedFiles.length) {
             this.isUploading = false;
           }
@@ -342,7 +342,7 @@ export class InscriptionFormComponent implements OnInit {
     }
 
     if (this.isUploading) {
-      alert("Veuillez attendre la fin du téléversement des fichiers.");
+      alert("Veuillez attendre la fin du chargement des fichiers.");
       return;
     }
 
@@ -354,14 +354,13 @@ export class InscriptionFormComponent implements OnInit {
 
     const request = {
       doctorantId: userId!,
-      // Note: Pas de directeurId, le backend mettra null par défaut
       campagne: { id: Number(formValue.campagneId) },
       sujetThese: formValue.sujetThese,
       laboratoireAccueil: formValue.laboratoireAccueil,
       collaborationExterne: formValue.collaborationExterne,
       typeInscription: formValue.typeInscription as TypeInscription,
 
-      // Liaison des documents uploadés
+      // Envoi des IDs de documents au backend
       documents: this.uploadedDocIds.map(id => ({ id: id }))
     };
 
@@ -372,7 +371,7 @@ export class InscriptionFormComponent implements OnInit {
     operation.subscribe({
       next: () => {
         if (!this.isEditMode()) {
-          if(confirm("Dossier enregistré en BROUILLON.\nVoulez-vous le soumettre définitivement à l'administration ?")) {
+          if(confirm("Dossier enregistré en BROUILLON.\nVoulez-vous le soumettre définitivement ?")) {
             this.router.navigate(['/inscriptions']);
           } else {
             this.router.navigate(['/inscriptions']);
@@ -382,7 +381,7 @@ export class InscriptionFormComponent implements OnInit {
         }
       },
       error: () => {
-        this.errorMessage.set('Une erreur est survenue lors de l\'enregistrement.');
+        this.errorMessage.set('Erreur lors de l\'enregistrement.');
         this.isLoading.set(false);
       }
     });
