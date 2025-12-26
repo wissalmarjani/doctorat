@@ -19,12 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -37,10 +31,11 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
 
+    // ✅ Injection de ton FileStorageService (pour gérer le stockage disque)
+    private final FileStorageService fileStorageService;
+
     @Value("${jwt.expiration}")
     private long jwtExpiration;
-
-    private static final String UPLOAD_DIR = "uploads";
 
     /* =====================================================
        INSCRIPTION SIMPLE (JSON)
@@ -50,7 +45,7 @@ public class AuthService {
     }
 
     /* =====================================================
-       INSCRIPTION AVEC FICHIERS (multipart/form-data)
+       ✅ INSCRIPTION AVEC FICHIERS (CORRIGÉE)
        ===================================================== */
     public AuthResponse registerWithFiles(
             RegisterRequest request,
@@ -60,24 +55,39 @@ public class AuthService {
     ) {
         log.info("📂 Inscription avec fichiers pour matricule: {}", request.getMatricule());
 
-        // 1️⃣ Création utilisateur + JWT
+        // 1. Créer l'utilisateur de base (Sauvegarde initiale)
         AuthResponse response = processRegistration(request);
-        Long userId = response.getUserId();
 
-        // 2️⃣ Traitement des fichiers
+        // 2. Récupérer l'entité User fraîchement créée pour la mettre à jour
+        User user = userRepository.findById(response.getUserId())
+                .orElseThrow(() -> new RuntimeException("Erreur interne: Utilisateur non trouvé après création"));
+
+        // 3. Sauvegarder les fichiers et mettre à jour les champs de l'entité
         try {
             if (cv != null && !cv.isEmpty()) {
-                saveFile(cv, userId, "CV");
+                String cvName = fileStorageService.saveFile(cv);
+                user.setCv(cvName);
             }
             if (diplome != null && !diplome.isEmpty()) {
-                saveFile(diplome, userId, "DIPLOME");
+                String diplomeName = fileStorageService.saveFile(diplome);
+                user.setDiplome(diplomeName);
             }
             if (lettre != null && !lettre.isEmpty()) {
-                saveFile(lettre, userId, "LETTRE");
+                String lettreName = fileStorageService.saveFile(lettre);
+                user.setLettreMotivation(lettreName);
             }
-        } catch (IOException e) {
-            log.error("❌ Erreur fichiers", e);
-            throw new RuntimeException("Erreur lors de l'enregistrement des fichiers");
+
+            // 4. Initialiser le Workflow
+            user.setEtat("EN_ATTENTE_ADMIN");
+
+            // 5. Mettre à jour en Base de Données
+            userRepository.save(user);
+            log.info("✅ Fichiers liés au compte : CV={}, Diplome={}", user.getCv(), user.getDiplome());
+
+        } catch (Exception e) {
+            log.error("❌ Erreur lors de la sauvegarde des fichiers", e);
+            // Optionnel : On pourrait supprimer le user si les fichiers échouent
+            throw new RuntimeException("Erreur lors de l'enregistrement des pièces jointes : " + e.getMessage());
         }
 
         return response;
@@ -106,13 +116,11 @@ public class AuthService {
         user.setTelephone(request.getTelephone());
         user.setRole(Role.CANDIDAT);
         user.setEnabled(true);
+        // L'état est géré par @PrePersist ou écrasé par registerWithFiles
 
         User savedUser = userRepository.save(user);
-        log.info("✅ Utilisateur créé : {}", savedUser.getMatricule());
 
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(savedUser.getMatricule());
-
+        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getMatricule());
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
@@ -132,28 +140,11 @@ public class AuthService {
     }
 
     /* =====================================================
-       SAUVEGARDE DES FICHIERS (DISQUE LOCAL)
-       ===================================================== */
-    private void saveFile(MultipartFile file, Long userId, String type) throws IOException {
-
-        Path userDir = Paths.get(UPLOAD_DIR, String.valueOf(userId));
-        Files.createDirectories(userDir);
-
-        String filename = type + "_" + file.getOriginalFilename();
-        Path destination = userDir.resolve(filename);
-
-        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-
-        log.info("📄 {} sauvegardé : {}", type, destination);
-    }
-
-    /* =====================================================
        LOGIN (Matricule OU Email)
        ===================================================== */
     public AuthResponse login(LoginRequest request) {
 
         String loginInput = request.getUsername();
-        log.info("🔐 Tentative de connexion : {}", loginInput);
 
         User user = userRepository.findByMatricule(loginInput)
                 .orElseGet(() -> userRepository.findByEmail(loginInput)
@@ -194,17 +185,13 @@ public class AuthService {
        REFRESH TOKEN
        ===================================================== */
     public AuthResponse refreshToken(String refreshToken) {
-
         if (!jwtService.validateToken(refreshToken)) {
             throw new RuntimeException("Token invalide");
         }
-
         String matricule = jwtService.extractUsername(refreshToken);
         User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
         UserDetails userDetails = userDetailsService.loadUserByUsername(matricule);
-
         return AuthResponse.builder()
                 .accessToken(jwtService.generateToken(userDetails))
                 .refreshToken(jwtService.generateRefreshToken(userDetails))
@@ -223,18 +210,14 @@ public class AuthService {
        CHANGER MOT DE PASSE
        ===================================================== */
     public void changePassword(String matricule, ChangePasswordRequest request) {
-
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Les mots de passe ne correspondent pas");
         }
-
         User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new RuntimeException("Ancien mot de passe incorrect");
         }
-
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -243,7 +226,6 @@ public class AuthService {
        PROFIL UTILISATEUR CONNECTÉ
        ===================================================== */
     public UserDTO getCurrentUser(String matricule) {
-
         User user = userRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
@@ -254,6 +236,9 @@ public class AuthService {
                 .nom(user.getNom())
                 .prenom(user.getPrenom())
                 .role(user.getRole().name())
+                // ✅ AJOUTE LE MAPPING ICI
+                .etat(user.getEtat())
+                .motifRefus(user.getMotifRefus())
                 .build();
     }
 }

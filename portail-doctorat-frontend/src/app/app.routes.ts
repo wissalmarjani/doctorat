@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
-// 👇 Assurez-vous que l'import est bien là
 import { inscriptionCompleteGuard } from './core/guards/inscription-complete.guard';
 
 export const routes: Routes = [
@@ -18,44 +17,57 @@ export const routes: Routes = [
         .then(m => m.PendingApprovalComponent)
   },
 
-  // ✅ DASHBOARD (Déjà protégé, ça fonctionne)
+  // --- DASHBOARD (Commun à tous les utilisateurs authentifiés) ---
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [authGuard, inscriptionCompleteGuard]
   },
 
-  // ✅ INSCRIPTIONS : NE PAS PROTÉGER AVEC inscriptionCompleteGuard
-  // Sinon boucle infinie (car c'est ici qu'on redirige l'utilisateur bloqué)
+  // --- INSCRIPTIONS ---
   {
     path: 'inscriptions',
     loadChildren: () => import('./features/inscriptions/inscriptions.routes').then(m => m.INSCRIPTIONS_ROUTES),
     canActivate: [authGuard]
   },
 
-  // Validation (si accessible au doctorant, protéger aussi)
+  // --- PROFIL (Commun à tous les utilisateurs authentifiés) ---
   {
-    path: 'validations',
-    loadComponent: () => import('./features/inscriptions/inscription-validation/inscription-validation.component')
-        .then(m => m.InscriptionValidationComponent),
-    canActivate: [authGuard] // Souvent réservé aux admins/profs, donc pas besoin de bloquer le doctorant ici s'il n'y a pas accès
+    path: 'profil',
+    loadComponent: () => import('./features/profil/profil.component').then(m => m.ProfilComponent),
+    canActivate: [authGuard]
   },
 
-  // 🔒 SOUTENANCES : AJOUTER LE GUARD ICI
+  // --- ESPACE DOCTORANT (nécessite inscription complète) ---
   {
     path: 'soutenances',
     loadChildren: () => import('./features/soutenances/soutenances.routes').then(m => m.SOUTENANCES_ROUTES),
-    canActivate: [authGuard, inscriptionCompleteGuard] // 👈 AJOUT ICI
+    canActivate: [authGuard, inscriptionCompleteGuard]
   },
-
-  // 🔒 DEROGATIONS : AJOUTER LE GUARD ICI
   {
     path: 'derogations',
     loadChildren: () => import('./features/derogations/derogations.routes').then(m => m.DEROGATIONS_ROUTES),
-    canActivate: [authGuard, inscriptionCompleteGuard] // 👈 AJOUT ICI
+    canActivate: [authGuard, inscriptionCompleteGuard]
   },
 
-  // ✅ ADMIN (Déjà protégé par roleGuard)
+  // --- ESPACE DIRECTEUR DE THÈSE ---
+  {
+    path: 'validations',
+    loadComponent: () => import('./features/directeur/validation/director-validation.component')
+        .then(m => m.DirectorValidationComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['DIRECTEUR_THESE'] }
+  },
+  // ❌ SUPPRIMÉ: /my-students (non conforme au CDC)
+  {
+    path: 'director/soutenances',
+    loadComponent: () => import('./features/directeur/soutenances/director-soutenance.component')
+        .then(m => m.DirectorSoutenanceComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['DIRECTEUR_THESE'] }
+  },
+
+  // --- ESPACE ADMIN ---
   {
     path: 'admin',
     loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES),
@@ -63,7 +75,7 @@ export const routes: Routes = [
     data: { roles: ['ADMIN'] }
   },
 
-  // ✅ CAMPAGNES
+  // --- ESPACE GESTION CAMPAGNES ---
   {
     path: 'campagnes',
     loadChildren: () => import('./features/campagnes/campagnes.routes').then(m => m.CAMPAGNES_ROUTES),
@@ -71,14 +83,7 @@ export const routes: Routes = [
     data: { roles: ['ADMIN', 'RESPONSABLE_CEDOC'] }
   },
 
-  // Profil
-  {
-    path: 'profil',
-    loadComponent: () => import('./features/profil/profil.component').then(m => m.ProfilComponent),
-    canActivate: [authGuard]
-  },
-
-  // 404
+  // --- 404 ---
   {
     path: '**',
     loadComponent: () => import('./shared/components/not-found/not-found.component').then(m => m.NotFoundComponent)

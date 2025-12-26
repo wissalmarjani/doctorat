@@ -34,42 +34,39 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        log.info("REST request to get all users");
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        log.info("REST request to get user by id: {}", id);
         Optional<User> userOpt = userService.getUserById(id);
-        if (userOpt.isPresent()) {
-            return ResponseEntity.ok(userOpt.get());
-        }
-        return ResponseEntity.notFound().build();
+        return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/username/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-        Optional<User> userOpt = userService.getUserByUsername(username);
-        return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return userService.getUserByUsername(username)
+                .map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        Optional<User> userOpt = userService.getUserByEmail(email);
-        return userOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return userService.getUserByEmail(email)
+                .map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/role/{role}")
     public ResponseEntity<List<User>> getUsersByRole(@PathVariable Role role) {
-        log.info("REST request to get users by role: {}", role);
-        List<User> users = userService.getUsersByRole(role);
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(userService.getUsersByRole(role));
+    }
+
+    @GetMapping("/etat/{etat}")
+    public ResponseEntity<List<User>> getUsersByEtat(@PathVariable String etat) {
+        return ResponseEntity.ok(userService.getUsersByEtat(etat));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             User updatedUser = userService.updateUser(id, user);
             return ResponseEntity.ok(updatedUser);
@@ -78,17 +75,68 @@ public class UserController {
         }
     }
 
-    // ✅ NOUVEL ENDPOINT SPÉCIFIQUE
-    // URL : PUT /api/users/{id}/role?newRole=DOCTORANT
+    // ========================================================
+    // WORKFLOW ADMIN
+    // ========================================================
+
+    /**
+     * L'Admin valide une candidature ET assigne un directeur
+     */
+    @PutMapping("/{id}/validate-admin")
+    public ResponseEntity<User> validateAdmin(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long directeurId) {
+        log.info("Request to validate candidate by admin: {} with directeur: {}", id, directeurId);
+
+        if (directeurId != null) {
+            return ResponseEntity.ok(userService.validerCandidatureAvecDirecteur(id, directeurId));
+        } else {
+            return ResponseEntity.ok(userService.validerCandidature(id));
+        }
+    }
+
+    /**
+     * L'Admin refuse une candidature avec motif
+     */
+    @PutMapping("/{id}/refuse")
+    public ResponseEntity<User> refuseCandidate(@PathVariable Long id, @RequestParam String motif) {
+        log.info("Request to refuse candidate by admin: {}", id);
+        return ResponseEntity.ok(userService.refuserCandidature(id, motif));
+    }
+
+    // ========================================================
+    // WORKFLOW DIRECTEUR DE THÈSE
+    // ========================================================
+
+    /**
+     * Le Directeur valide une candidature → Passe à VALIDE et rôle DOCTORANT
+     */
+    @PutMapping("/{id}/validate-directeur")
+    public ResponseEntity<User> validateDirecteur(@PathVariable Long id) {
+        log.info("Request to validate candidate by directeur: {}", id);
+        return ResponseEntity.ok(userService.validerCandidatureDirecteur(id));
+    }
+
+    /**
+     * Le Directeur refuse une candidature avec motif
+     */
+    @PutMapping("/{id}/refuse-directeur")
+    public ResponseEntity<User> refuseDirecteur(@PathVariable Long id, @RequestParam String motif) {
+        log.info("Request to refuse candidate by directeur: {} with motif: {}", id, motif);
+        return ResponseEntity.ok(userService.refuserCandidatureDirecteur(id, motif));
+    }
+
+    // ========================================================
+    // AUTRES ENDPOINTS
+    // ========================================================
+
     @PutMapping("/{id}/role")
     public ResponseEntity<User> changeUserRole(@PathVariable Long id, @RequestParam Role newRole) {
-        log.info("REST request to change role of user {} to {}", id, newRole);
         return ResponseEntity.ok(userService.changeRole(id, newRole));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        log.info("REST request to delete user with id: {}", id);
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
@@ -98,19 +146,18 @@ public class UserController {
         return ResponseEntity.ok("User Service is running!");
     }
 
-    // ========== ENDPOINTS POUR OPENFEIGN ==========
-
+    // ========== DTOs ==========
     @GetMapping("/{id}/dto")
     public ResponseEntity<UserDTO> getUserDTO(@PathVariable Long id) {
-        Optional<User> userOpt = userService.getUserById(id);
-        return userOpt.map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
+        return userService.getUserById(id)
+                .map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/username/{username}/dto")
     public ResponseEntity<UserDTO> getUserDTOByUsername(@PathVariable String username) {
-        Optional<User> userOpt = userService.getUserByUsername(username);
-        return userOpt.map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
+        return userService.getUserByUsername(username)
+                .map(user -> ResponseEntity.ok(userMapper.toDTO(user)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ma.enset.userservice.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -27,7 +28,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -41,20 +42,40 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // 🔓 ENDPOINTS PUBLICS
-                        // L'ordre est important : les plus spécifiques d'abord
-                        .requestMatchers("/api/auth/register-with-files").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // ================== PUBLIC ==================
                         .requestMatchers(
+                                "/api/auth/**",
+                                "/api/auth/register-with-files",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // 🔴 TEMPORAIRE : Users publics pour test (à retirer en prod)
-                        .requestMatchers("/api/users/**").permitAll()
+                        // ================== FICHIERS (PUBLIC) ==================
+                        .requestMatchers("/api/files/**").permitAll()
 
-                        // 🔐 Le reste nécessite une authentification
+                        // ================== DIRECTEUR - Routes spécifiques ==================
+                        // ✅ Autoriser le directeur à voir les candidats EN_ATTENTE_DIRECTEUR
+                        .requestMatchers(HttpMethod.GET, "/api/users/etat/**")
+                        .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
+
+                        // ✅ Autoriser le directeur à voir les candidats par rôle
+                        .requestMatchers(HttpMethod.GET, "/api/users/role/**")
+                        .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
+
+                        // ✅ Autoriser le directeur à valider des candidatures
+                        .requestMatchers(HttpMethod.PUT, "/api/users/*/validate-directeur")
+                        .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
+
+                        // ✅ NOUVEAU : Autoriser le directeur à REFUSER des candidatures
+                        .requestMatchers(HttpMethod.PUT, "/api/users/*/refuse-directeur")
+                        .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
+
+                        // ================== ADMIN - Toutes les autres routes users ==================
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+
+                        // ================== RESTE ==================
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
@@ -69,23 +90,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Autoriser le frontend Angular
         configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-
-        // Autoriser toutes les méthodes HTTP
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-
-        // Autoriser tous les headers (notamment Authorization et Content-Type)
+        configuration.setAllowedMethods(
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+        );
         configuration.setAllowedHeaders(List.of("*"));
-
-        // Exposer le header Authorization au frontend
-        configuration.setExposedHeaders(List.of("Authorization"));
-
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 
@@ -98,7 +113,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
         return config.getAuthenticationManager();
     }
 

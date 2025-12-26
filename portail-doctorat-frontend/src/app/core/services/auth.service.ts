@@ -15,8 +15,10 @@ export class AuthService {
 
   private authUrl = environment.userServiceUrl;
 
+  // Initialisation du signal avec les données du localStorage
   private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
 
+  // Signaux dérivés (Computed)
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
   readonly userRole = computed(() => this.currentUserSignal()?.role);
@@ -29,7 +31,7 @@ export class AuthService {
       private router: Router
   ) {}
 
-  // Inscription simple (JSON uniquement - utilisé par l'admin pour créer des profs par ex)
+  // Inscription simple (JSON uniquement)
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authUrl}/auth/register`, request)
         .pipe(
@@ -38,16 +40,15 @@ export class AuthService {
         );
   }
 
-  // ✅ NOUVELLE MÉTHODE : Inscription Candidat avec Fichiers (FormData)
-  // Utilise l'endpoint spécifique 'register-with-files' défini dans le Backend
+  // ✅ Inscription Candidat avec Fichiers (FormData)
   registerWithFiles(formData: FormData): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authUrl}/auth/register-with-files`, formData)
         .pipe(
-            // On ne connecte pas automatiquement l'utilisateur ici car il doit attendre validation
             catchError(this.handleError)
         );
   }
 
+  // Connexion
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.authUrl}/auth/login`, request)
         .pipe(
@@ -56,6 +57,7 @@ export class AuthService {
         );
   }
 
+  // Déconnexion
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
@@ -64,6 +66,7 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
+  // Rafraîchir le token
   refreshToken(): Observable<AuthResponse> {
     const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
     return this.http.post<AuthResponse>(`${this.authUrl}/auth/refresh`, { refreshToken })
@@ -98,10 +101,23 @@ export class AuthService {
     return this.http.get<User>(`${this.authUrl}/auth/me`);
   }
 
+  // ✅ NOUVELLE MÉTHODE : Mettre à jour l'utilisateur manuellement
+  // Appelée par PendingApprovalComponent après avoir récupéré le profil frais
+  updateUserStorage(user: User): void {
+    // 1. Mettre à jour le LocalStorage (persistance)
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+
+    // 2. Mettre à jour le signal (réactivité immédiate de l'UI)
+    this.currentUserSignal.set(user);
+  }
+
+  // --- Gestion interne ---
+
   private handleAuthResponse(response: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.accessToken);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refreshToken);
 
+    // On construit un objet User minimal à partir de la réponse de login
     const user: User = {
       id: response.userId,
       username: response.username,
@@ -111,10 +127,11 @@ export class AuthService {
       role: response.role,
       enabled: true,
       telephone: response.telephone
+      // Note: etat et motifRefus ne sont pas toujours dans AuthResponse,
+      // c'est pourquoi on appelle getProfile() ensuite dans les composants critiques.
     };
 
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    this.currentUserSignal.set(user);
+    this.updateUserStorage(user);
   }
 
   private loadUserFromStorage(): User | null {

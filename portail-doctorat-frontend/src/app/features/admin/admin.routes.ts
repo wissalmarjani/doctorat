@@ -1,42 +1,34 @@
 import { Routes } from '@angular/router';
 
 export const ADMIN_ROUTES: Routes = [
-  // 🔹 Page d'accueil Admin
   {
     path: '',
-    loadComponent: () =>
-        import('./dashboard/admin-dashboard.component')
-            .then(m => m.AdminDashboardComponent)
-  },
-
-  // 🔴 IMPORTANT : la route spécifique doit être AVANT la route générale
-  {
-    path: 'users/new-director',
-    loadComponent: () =>
-        import('./user-management/director-form/director-form.component')
-            .then(m => m.DirectorFormComponent)
-  },
-
-  // 🔴 Route générale des utilisateurs (avec pathMatch: 'full')
-  {
-    path: 'users',
-    loadComponent: () =>
-        import('./user-management/user-management.component')
-            .then(m => m.UserManagementComponent),
+    redirectTo: 'dashboard',
     pathMatch: 'full'
   },
-
-  // 🔹 Autres routes Admin
   {
-    path: 'derogations',
-    loadComponent: () =>
-        import('./derogation-management/derogation-management.component')
-            .then(m => m.DerogationManagementComponent)
+    path: 'dashboard',
+    loadComponent: () => import('./dashboard/admin-dashboard.component')
+        .then(m => m.AdminDashboardComponent)
   },
   {
-    path: 'inscriptions',
-    loadComponent: () =>
-        import('./pages/inscription-validation/admin-inscription-validation.component')
-            .then(m => m.AdminInscriptionValidationComponent)
+    path: 'users',
+    loadComponent: () => import('./user-management/user-management.component')
+        .then(m => m.UserManagementComponent)
+  },
+  {
+    path: 'derogations',
+    loadComponent: () => import('./derogation-management/derogation-management.component')
+        .then(m => m.DerogationManagementComponent)
+  },
+  {
+    path: 'soutenances',
+    loadComponent: () => import('./soutenance-list/soutenance-list.component')
+        .then(m => m.SoutenanceListComponent)
+  },
+  {
+    path: 'soutenances/:id',
+    loadComponent: () => import('./soutenance-detail/soutenance-detail.component')
+        .then(m => m.SoutenanceDetailComponent)
   }
 ];

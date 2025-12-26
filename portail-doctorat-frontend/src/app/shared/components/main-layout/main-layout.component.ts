@@ -21,6 +21,8 @@ import { Role } from '@core/models/user.model';
 
         <nav class="sidebar-nav">
           <ul class="nav-list">
+
+            <!-- TABLEAU DE BORD (Commun) -->
             <li>
               <a routerLink="/dashboard" routerLinkActive="active">
                 <i class="bi bi-grid-1x2"></i>
@@ -28,18 +30,40 @@ import { Role } from '@core/models/user.model';
               </a>
             </li>
 
-            <!-- SECTION DOCTORANT -->
+            <!-- ======================================================= -->
+            <!-- SECTION DIRECTEUR DE THESE (Conforme CDC)               -->
+            <!-- ======================================================= -->
+            @if (isDirecteur()) {
+              <li class="nav-section">Gestion Académique</li>
+
+              <!-- Validation des candidatures -->
+              <li>
+                <a routerLink="/validations" routerLinkActive="active">
+                  <i class="bi bi-file-earmark-check"></i>
+                  <span>Validations en attente</span>
+                </a>
+              </li>
+
+              <!-- ❌ SUPPRIMÉ: Mes Doctorants (non conforme au CDC) -->
+
+                  <!-- Processus de Soutenance -->
+              <li>
+                <a routerLink="/director/soutenances" routerLinkActive="active">
+                  <i class="bi bi-award"></i>
+                  <span>Demandes Soutenance</span>
+                </a>
+              </li>
+            }
+
+            <!-- ======================================================= -->
+            <!-- SECTION DOCTORANT (Le candidat validé)                  -->
+            <!-- ======================================================= -->
             @if (isDoctorant()) {
+              <li class="nav-section">Mon Parcours</li>
               <li>
                 <a routerLink="/inscriptions" routerLinkActive="active">
                   <i class="bi bi-file-earmark-text"></i>
-                  <span>Mes inscriptions</span>
-                </a>
-              </li>
-              <li>
-                <a routerLink="/soutenances" routerLinkActive="active">
-                  <i class="bi bi-award"></i>
-                  <span>Ma soutenance</span>
+                  <span>Dossier Inscription</span>
                 </a>
               </li>
               <li>
@@ -48,51 +72,48 @@ import { Role } from '@core/models/user.model';
                   <span>Dérogations</span>
                 </a>
               </li>
-            }
-
-            <!-- SECTION DIRECTEUR DE THESE -->
-            @if (isDirecteur()) {
-              <li class="nav-section">Encadrement</li>
               <li>
-                <a routerLink="/validations" routerLinkActive="active">
-                  <i class="bi bi-check-circle"></i>
-                  <span>Validations</span>
-                  <span class="badge-dot"></span>
+                <a routerLink="/soutenances" routerLinkActive="active">
+                  <i class="bi bi-mortarboard"></i>
+                  <span>Ma Soutenance</span>
                 </a>
               </li>
             }
 
-            <!-- SECTION ADMIN -->
+            <!-- ======================================================= -->
+            <!-- SECTION ADMIN                                           -->
+            <!-- ======================================================= -->
             @if (isAdmin()) {
               <li class="nav-section">Administration</li>
               <li>
-                <a routerLink="/campagnes" routerLinkActive="active">
-                  <i class="bi bi-calendar-event"></i>
+                <a routerLink="/admin/users" routerLinkActive="active">
+                  <i class="bi bi-people-fill"></i>
+                  <span>Utilisateurs</span>
+                </a>
+              </li>
+              <li>
+                <a routerLink="/admin/campagnes" routerLinkActive="active">
+                  <i class="bi bi-calendar-range"></i>
                   <span>Campagnes</span>
                 </a>
               </li>
               <li>
-                <a routerLink="/admin/inscriptions" routerLinkActive="active">
-                  <i class="bi bi-file-earmark-check"></i>
-                  <span>Toutes inscriptions</span>
-                </a>
-              </li>
-              <li>
                 <a routerLink="/admin/derogations" routerLinkActive="active">
-                  <i class="bi bi-hourglass-split"></i>
+                  <i class="bi bi-exclamation-circle"></i>
                   <span>Dérogations</span>
                 </a>
               </li>
               <li>
-                <a routerLink="/admin/users" routerLinkActive="active">
-                  <i class="bi bi-people"></i>
-                  <span>Utilisateurs</span>
+                <a routerLink="/admin/soutenances" routerLinkActive="active">
+                  <i class="bi bi-award-fill"></i>
+                  <span>Soutenances</span>
                 </a>
               </li>
             }
           </ul>
         </nav>
 
+        <!-- FOOTER USER -->
         <div class="sidebar-footer">
           <a routerLink="/profil" class="user-info">
             <div class="user-avatar">
@@ -158,7 +179,7 @@ import { Role } from '@core/models/user.model';
     .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
     .nav-list { list-style: none; padding: 0; margin: 0; }
-    .nav-section { padding: 1rem 1.5rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; }
+    .nav-section { padding: 1rem 1.5rem 0.5rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
 
     .nav-list a {
       display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem;
@@ -173,8 +194,6 @@ import { Role } from '@core/models/user.model';
       content: ''; position: absolute; left: 0; top: 0; bottom: 0;
       width: 3px; background: #818cf8; border-top-right-radius: 4px; border-bottom-right-radius: 4px;
     }
-
-    .badge-dot { width: 8px; height: 8px; background: #f43f5e; border-radius: 50%; margin-left: auto; }
 
     /* --- FOOTER --- */
     .sidebar-footer {
@@ -211,11 +230,10 @@ import { Role } from '@core/models/user.model';
     }
     .btn-logout-full:hover { background: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
 
-    /* --- CONTENU PRINCIPAL (CORRIGÉ) --- */
+    /* --- CONTENU PRINCIPAL --- */
     .main-content {
       flex: 1;
       margin-left: 260px;
-      /* ✅ CORRECTION ICI : Retour à 2rem de padding pour décoller le texte du bord */
       padding: 2rem;
       background: #f8fafc;
       min-height: 100vh;
@@ -239,13 +257,12 @@ export class MainLayoutComponent {
   getRoleLabel(): string {
     const role = this.authService.currentUser()?.role;
     const labels: Record<string, string> = {
+      'CANDIDAT': 'Candidat',
       'DOCTORANT': 'Doctorant',
-      'DIRECTEUR_THESE': 'Directeur',
-      'CHEF_FILIERE': 'Chef filière',
-      'RESPONSABLE_CEDOC': 'Resp. CEDoc',
+      'DIRECTEUR_THESE': 'Directeur de Thèse',
       'ADMIN': 'Administrateur'
     };
-    return role ? labels[role] || role : '';
+    return role ? labels[role] || role : 'Invité';
   }
 
   logout(): void {

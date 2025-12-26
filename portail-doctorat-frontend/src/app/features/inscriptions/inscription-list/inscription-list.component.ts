@@ -30,27 +30,31 @@ import { Inscription, StatutInscription } from '../../../core/models/inscription
             <p>Chargement...</p>
           </div>
         } @else if (inscriptions().length === 0) {
+          <!-- ÉTAT VIDE - DOCTORANT VALIDÉ MAIS PAS ENCORE D'INSCRIPTION ANNUELLE -->
           <div class="empty-state">
-            <i class="bi bi-file-earmark-text"></i>
-            <h3>Aucune inscription</h3>
-            <p>Vous n'avez pas encore d'inscription. Créez votre première demande.</p>
-            <a routerLink="/inscriptions/nouvelle" class="btn btn-primary">
-              <i class="bi bi-plus-lg"></i>
-              Nouvelle inscription
+            <div class="success-badge mb-4">
+              <i class="bi bi-patch-check-fill"></i>
+            </div>
+            <h3>Félicitations, vous êtes inscrit comme Doctorant !</h3>
+            <p>Vous n'avez pas encore créé de dossier d'inscription annuelle.<br>
+              Créez votre premier dossier pour l'année universitaire en cours.</p>
+            <a routerLink="/inscriptions/nouvelle" class="btn btn-primary btn-lg mt-3">
+              <i class="bi bi-plus-lg me-2"></i>
+              Créer mon dossier annuel
             </a>
           </div>
         } @else {
           <div class="card">
             <table class="table">
               <thead>
-                <tr>
-                  <th>Campagne</th>
-                  <th>Sujet de thèse</th>
-                  <th>Type</th>
-                  <th>Statut</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
+              <tr>
+                <th>Campagne</th>
+                <th>Sujet de thèse</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
               </thead>
               <tbody>
                 @for (inscription of inscriptions(); track inscription.id) {
@@ -59,7 +63,7 @@ import { Inscription, StatutInscription } from '../../../core/models/inscription
                     <td class="sujet-cell">{{ inscription.sujetThese }}</td>
                     <td>
                       <span class="badge badge-secondary">
-                        {{ inscription.typeInscription === 'PREMIERE_INSCRIPTION' ? '1ère' : 'Réinscription' }}
+                        {{ inscription.typeInscription === 'PREMIERE_INSCRIPTION' ? '1ère inscription' : 'Réinscription' }}
                       </span>
                     </td>
                     <td>
@@ -124,6 +128,11 @@ import { Inscription, StatutInscription } from '../../../core/models/inscription
 
     .btn-primary:hover {
       background: #5a67d8;
+    }
+
+    .btn-lg {
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
     }
 
     .btn-outline {
@@ -223,19 +232,28 @@ import { Inscription, StatutInscription } from '../../../core/models/inscription
       border: 1px solid #e2e8f0;
     }
 
-    .empty-state i {
-      font-size: 4rem;
-      color: #e2e8f0;
-      margin-bottom: 1rem;
+    .empty-state .success-badge {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.5rem;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
     }
 
     .empty-state h3 {
       margin-bottom: 0.5rem;
+      color: #1e293b;
     }
 
     .empty-state p {
       color: #64748b;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
+      line-height: 1.6;
     }
 
     .spinner {
@@ -258,8 +276,8 @@ export class InscriptionListComponent implements OnInit {
   isLoading = signal(true);
 
   constructor(
-    private authService: AuthService,
-    private inscriptionService: InscriptionService
+      private authService: AuthService,
+      private inscriptionService: InscriptionService
   ) {}
 
   ngOnInit(): void {

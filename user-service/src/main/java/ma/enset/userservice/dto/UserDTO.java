@@ -17,4 +17,6 @@ public class UserDTO {
     private String prenom;
     private String role;
     private Boolean enabled;
+    private String etat;
+    private String motifRefus;
 }

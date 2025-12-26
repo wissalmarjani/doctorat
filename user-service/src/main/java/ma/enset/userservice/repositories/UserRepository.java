@@ -31,4 +31,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByEnabledTrue();
 
     List<User> findByRoleAndEnabledTrue(Role role);
+
+    List<User> findByEtat(String etat);
 }

@@ -1,17 +1,41 @@
 export interface User {
   id: number;
-  username: string; // C'est le Matricule
+  username: string;
   email: string;
   nom: string;
   prenom: string;
   role: Role | string;
   enabled: boolean;
-
-  // ✅ AJOUTEZ CETTE LIGNE :
   telephone?: string;
+
+  // Documents
+  cv?: string;
+  diplome?: string;
+  lettreMotivation?: string;
+
+  // Workflow
+  etat?: EtatCandidature | string;
+  motifRefus?: string;
+
+  // ✅ Directeur assigné
+  directeurId?: number;
+
+  // Suivi Doctorant
+  dateInscription?: string;
+  anneeThese?: number;
+  nbPublications?: number;
+  nbConferences?: number;
+  heuresFormation?: number;
 
   createdAt?: string;
   updatedAt?: string;
+}
+
+export enum EtatCandidature {
+  EN_ATTENTE_ADMIN = 'EN_ATTENTE_ADMIN',
+  EN_ATTENTE_DIRECTEUR = 'EN_ATTENTE_DIRECTEUR',
+  VALIDE = 'VALIDE',
+  REFUSE = 'REFUSE'
 }
 
 export interface AuthResponse {
@@ -48,4 +72,11 @@ export interface RegisterRequest {
   telephone: string;
   email: string;
   password: string;
+}
+
+export interface UpdateSuiviRequest {
+  anneeThese?: number;
+  nbPublications?: number;
+  nbConferences?: number;
+  heuresFormation?: number;
 }

@@ -13,12 +13,19 @@ import ma.enset.soutenanceservice.repositories.MembreJuryRepository;
 import ma.enset.soutenanceservice.repositories.SoutenanceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -29,7 +36,10 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     private final SoutenanceRepository soutenanceRepository;
     private final MembreJuryRepository membreJuryRepository;
     private final UserServiceClient userServiceClient;
-    private final SoutenanceEventPublisher eventPublisher;  // ← AJOUTÉ
+    private final SoutenanceEventPublisher eventPublisher;
+
+    // Dossier de stockage pour ce service
+    private final Path rootLocation = Paths.get("uploads/soutenances");
 
     @Override
     public Soutenance createSoutenance(Soutenance soutenance) {
@@ -51,6 +61,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
             throw new RuntimeException("Impossible de vérifier les utilisateurs. Assurez-vous que le doctorant et le directeur existent.");
         }
 
+        // Sauvegarde initiale
         Soutenance saved = soutenanceRepository.save(soutenance);
 
         // ====== PUBLIER L'ÉVÉNEMENT KAFKA ======
@@ -75,6 +86,60 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         // ====== FIN ÉVÉNEMENT KAFKA ======
 
         return saved;
+    }
+
+    // ✅ NOUVELLE MÉTHODE D'IMPLÉMENTATION POUR LES FICHIERS
+    @Override
+    public Soutenance soumettreDemande(String titre, Long doctorantId, Long directeurId,
+                                       MultipartFile manuscrit, MultipartFile rapportAntiPlagiat, MultipartFile autorisation) {
+        log.info("Soumission demande soutenance pour doctorant: {}", doctorantId);
+
+        // 1. Sauvegarder les fichiers
+        String manuscritPath = saveFile(manuscrit, "manuscrit");
+        String rapportPath = saveFile(rapportAntiPlagiat, "anti-plagiat");
+        String autorisationPath = (autorisation != null && !autorisation.isEmpty()) ? saveFile(autorisation, "autorisation") : null;
+
+        // 2. Créer l'objet Soutenance
+        Soutenance soutenance = new Soutenance();
+        soutenance.setTitreThese(titre);
+        soutenance.setDoctorantId(doctorantId);
+        soutenance.setDirecteurId(directeurId);
+
+        // Chemins des fichiers
+        soutenance.setCheminManuscrit(manuscritPath);
+        soutenance.setCheminRapportAntiPlagiat(rapportPath);
+        soutenance.setCheminAutorisation(autorisationPath);
+
+        // Statut initial
+        soutenance.setStatut(StatutSoutenance.SOUMIS);
+
+        // 3. Appeler la méthode de création standard (qui gère Kafka et OpenFeign)
+        return createSoutenance(soutenance);
+    }
+
+    // Helper pour sauvegarder un fichier
+    private String saveFile(MultipartFile file, String prefix) {
+        try {
+            if (file == null || file.isEmpty()) return null;
+
+            if (!Files.exists(rootLocation)) {
+                Files.createDirectories(rootLocation);
+            }
+
+            String extension = "";
+            if (file.getOriginalFilename() != null && file.getOriginalFilename().contains(".")) {
+                extension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
+            }
+
+            String filename = prefix + "_" + UUID.randomUUID() + extension;
+            Path destination = rootLocation.resolve(filename);
+
+            Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
+
+            return filename;
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur lors de la sauvegarde du fichier: " + e.getMessage());
+        }
     }
 
     @Override
@@ -392,8 +457,13 @@ public class SoutenanceServiceImpl implements SoutenanceService {
      */
     private Soutenance enrichirAvecInfosUtilisateurs(Soutenance soutenance) {
         try {
+            // 1. Récupérer les infos
             UserDTO doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
             UserDTO directeur = userServiceClient.getUserById(soutenance.getDirecteurId());
+
+            // 2. ✅ LES STOCKER DANS L'OBJET (C'est ce qui manquait !)
+            soutenance.setDoctorantInfo(doctorant);
+            soutenance.setDirecteurInfo(directeur);
 
             log.info("Infos enrichies - Doctorant: {} {}, Directeur: {} {}",
                     doctorant.getNom(), doctorant.getPrenom(),
@@ -402,6 +472,9 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         } catch (Exception e) {
             log.warn("Impossible de récupérer les infos utilisateurs pour la soutenance {}: {}",
                     soutenance.getId(), e.getMessage());
+
+            // Optionnel : Mettre des objets vides pour éviter les NullPointerException au front
+            // soutenance.setDoctorantInfo(UserDTO.builder().nom("Inconnu").prenom("").build());
         }
 
         return soutenance;

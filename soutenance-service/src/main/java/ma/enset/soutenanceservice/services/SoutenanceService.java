@@ -3,6 +3,7 @@ package ma.enset.soutenanceservice.services;
 import ma.enset.soutenanceservice.entities.MembreJury;
 import ma.enset.soutenanceservice.entities.Soutenance;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -11,7 +12,12 @@ import java.util.Optional;
 
 public interface SoutenanceService {
 
+    // Méthode de base
     Soutenance createSoutenance(Soutenance soutenance);
+
+    // ✅ NOUVELLE MÉTHODE pour gérer le formulaire avec fichiers (Appelée par le Controller)
+    Soutenance soumettreDemande(String titre, Long doctorantId, Long directeurId,
+                                MultipartFile manuscrit, MultipartFile rapportAntiPlagiat, MultipartFile autorisation);
 
     Soutenance updateSoutenance(Long id, Soutenance soutenance);
 

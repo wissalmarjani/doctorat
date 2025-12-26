@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.enset.soutenanceservice.dto.UserDTO;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
+import ma.enset.soutenanceservice.enums.RoleJury;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +36,16 @@ public class Soutenance {
     @NotNull(message = "L'ID du directeur est obligatoire")
     @Column(name = "directeur_id", nullable = false)
     private Long directeurId;
+
+    // =======================================================
+    // ✅ Champs NON persistés (utilisés uniquement pour le JSON)
+    // =======================================================
+    @Transient
+    private UserDTO doctorantInfo;
+
+    @Transient
+    private UserDTO directeurInfo;
+    // =======================================================
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -118,7 +130,10 @@ public class Soutenance {
         updatedAt = LocalDateTime.now();
     }
 
+    // =======================
     // Méthodes utilitaires
+    // =======================
+
     public boolean prerequisSontValides() {
         return prerequis != null && prerequis.verifierPrerequisMinimaux();
     }
@@ -128,13 +143,12 @@ public class Soutenance {
             return false;
         }
 
-        // Vérifier qu'on a au moins 1 président, 2 rapporteurs
         long nbPresidents = membresJury.stream()
-                .filter(m -> m.getRole() == ma.enset.soutenanceservice.enums.RoleJury.PRESIDENT)
+                .filter(m -> m.getRole() == RoleJury.PRESIDENT)
                 .count();
 
         long nbRapporteurs = membresJury.stream()
-                .filter(m -> m.getRole() == ma.enset.soutenanceservice.enums.RoleJury.RAPPORTEUR)
+                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
                 .count();
 
         return nbPresidents >= 1 && nbRapporteurs >= 2;
@@ -146,7 +160,7 @@ public class Soutenance {
         }
 
         return membresJury.stream()
-                .filter(m -> m.getRole() == ma.enset.soutenanceservice.enums.RoleJury.RAPPORTEUR)
+                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
                 .allMatch(m -> Boolean.TRUE.equals(m.getRapportSoumis()));
     }
 
@@ -156,7 +170,7 @@ public class Soutenance {
         }
 
         return membresJury.stream()
-                .filter(m -> m.getRole() == ma.enset.soutenanceservice.enums.RoleJury.RAPPORTEUR)
+                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
                 .allMatch(m -> Boolean.TRUE.equals(m.getAvisFavorable()));
     }
 }

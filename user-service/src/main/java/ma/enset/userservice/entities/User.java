@@ -20,7 +20,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails { // ✅ IMPLÉMENTATION ESSENTIELLE
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,6 +57,47 @@ public class User implements UserDetails { // ✅ IMPLÉMENTATION ESSENTIELLE
     @Column(nullable = false)
     private Boolean enabled = true;
 
+    // =============================================================
+    // DOCUMENTS
+    // =============================================================
+    private String cv;
+    private String diplome;
+    private String lettreMotivation;
+
+    // =============================================================
+    // WORKFLOW
+    // =============================================================
+    @Column(name = "etat_candidature")
+    private String etat = "EN_ATTENTE_ADMIN";
+
+    @Column(columnDefinition = "TEXT")
+    private String motifRefus;
+
+    // ✅ NOUVEAU : Directeur de thèse assigné
+    @Column(name = "directeur_id")
+    private Long directeurId;
+
+    // =============================================================
+    // SUIVI DOCTORANT (Selon CDC)
+    // =============================================================
+    @Column(name = "date_inscription")
+    private LocalDateTime dateInscription;
+
+    @Column(name = "annee_these")
+    private Integer anneeThese = 1;
+
+    @Column(name = "nb_publications")
+    private Integer nbPublications = 0;
+
+    @Column(name = "nb_conferences")
+    private Integer nbConferences = 0;
+
+    @Column(name = "heures_formation")
+    private Integer heuresFormation = 0;
+
+    // =============================================================
+    // TIMESTAMPS
+    // =============================================================
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -64,16 +105,11 @@ public class User implements UserDetails { // ✅ IMPLÉMENTATION ESSENTIELLE
     private LocalDateTime updatedAt;
 
     // =============================================================
-    // ✅ MÉTHODES SPRING SECURITY (USER DETAILS)
+    // USER DETAILS IMPLEMENTATION
     // =============================================================
-
-    /**
-     * C'est CETTE méthode qui permet à Spring Security de savoir si vous êtes ADMIN.
-     * On convertit l'Enum Role en une Authority.
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
@@ -82,33 +118,27 @@ public class User implements UserDetails { // ✅ IMPLÉMENTATION ESSENTIELLE
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return this.enabled;
-    }
+    public boolean isEnabled() { return this.enabled; }
 
     // =============================================================
     // LIFECYCLE
     // =============================================================
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (this.etat == null) {
+            this.etat = "EN_ATTENTE_ADMIN";
+        }
     }
 
     @PreUpdate

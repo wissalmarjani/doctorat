@@ -13,13 +13,12 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     <app-main-layout>
       <div class="page-container p-4">
 
-        <!-- EN-TÊTE -->
-        <div class="d-flex justify-content-between align-items-center mb-5">
+        <div class="d-flex justify-content-between align-items-end mb-4">
           <div>
             <h2 class="fw-bold text-dark mb-1">Gestion des Dérogations</h2>
             <p class="text-muted mb-0">Traitez les demandes de prolongation de durée de thèse.</p>
           </div>
-          <button class="btn btn-light text-primary fw-bold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2"
+          <button class="btn btn-white border shadow-sm text-primary fw-bold rounded-pill px-4 d-flex align-items-center gap-2 hover-scale"
                   (click)="loadDerogations()"
                   [disabled]="isLoading()">
             <span *ngIf="isLoading()" class="spinner-border spinner-border-sm"></span>
@@ -28,7 +27,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
           </button>
         </div>
 
-        <!-- SWITCHER (ONGLETS) -->
         <div class="switcher-container mb-5">
           <div class="switcher">
             <button class="switcher-btn"
@@ -36,7 +34,8 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                     (click)="setTab('PENDING')">
               <i class="bi bi-hourglass-split me-2"></i> En attente
               <span *ngIf="getCountByStatus('EN_ATTENTE') > 0"
-                    class="badge bg-white text-danger ms-2 shadow-sm rounded-pill">
+                    class="badge ms-2 rounded-pill"
+                    [ngClass]="activeTab === 'PENDING' ? 'bg-primary-subtle text-primary' : 'bg-danger text-white'">
                 {{ getCountByStatus('EN_ATTENTE') }}
               </span>
             </button>
@@ -48,7 +47,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
           </div>
         </div>
 
-        <!-- LOGIQUE D'AFFICHAGE -->
         @if (isLoading()) {
           <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status"></div>
@@ -56,26 +54,19 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
           </div>
         } @else if (filteredDerogations().length === 0) {
 
-          <!-- LISTE VIDE (Nettoyée : Plus d'icône, plus d'espace vide) -->
           <div class="card border-0 shadow-sm rounded-4 text-center py-5 fade-in">
             <div class="card-body">
+              <i class="bi bi-inbox fs-1 mb-2 text-light-gray"></i>
               <h4 class="fw-bold text-dark mb-2">Aucune demande</h4>
               <p class="text-muted mb-0">
-                {{ activeTab === 'PENDING' ? 'Aucune dérogation en attente de validation.' : "L'historique est vide." }}
+                {{ activeTab === 'PENDING' ? 'Aucune dérogation en attente de validation.' : "L'historique contient toutes les dérogations traitées." }}
               </p>
             </div>
           </div>
 
         } @else {
 
-          <!-- TABLEAU DES DONNÉES -->
-          <div class="card border-0 shadow-lg rounded-4 overflow-hidden fade-in">
-
-            <div class="card-header bg-white py-3 border-bottom ps-4">
-              <h5 class="mb-0 fw-bold text-primary">
-                <i class="bi bi-list-ul me-2"></i> Liste des demandes
-              </h5>
-            </div>
+          <div class="card border-0 shadow-sm rounded-4 overflow-hidden fade-in-up">
 
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
@@ -92,7 +83,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
 
                   @for (derog of filteredDerogations(); track derog.id) {
                     <tr>
-                      <!-- Doctorant -->
                       <td class="ps-4">
                         <div class="d-flex align-items-center">
                           <div class="avatar-circle bg-gradient-orange text-white me-3 shadow-sm">
@@ -105,21 +95,18 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                         </div>
                       </td>
 
-                      <!-- Année -->
                       <td>
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3">
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-2">
                           {{ derog.anneeDemandee }}ème Année
                         </span>
                       </td>
 
-                      <!-- Motif -->
                       <td>
                         <div class="text-truncate text-muted" style="max-width: 250px;" [title]="derog.motif">
                           {{ derog.motif }}
                         </div>
                       </td>
 
-                      <!-- Date -->
                       <td>
                         <div class="d-flex align-items-center text-dark">
                           <i class="bi bi-calendar3 me-2 text-muted"></i>
@@ -127,10 +114,8 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                         </div>
                       </td>
 
-                      <!-- Actions (Si PENDING) ou Statut (Si HISTORY) -->
                       <td class="text-end pe-4">
 
-                        <!-- Cas EN ATTENTE : Boutons -->
                         <div *ngIf="activeTab === 'PENDING'" class="d-flex justify-content-end gap-2">
                           <button class="btn btn-success btn-sm px-3 shadow-sm rounded-pill d-flex align-items-center gap-1"
                                   (click)="accepter(derog.id)"
@@ -144,7 +129,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                           </button>
                         </div>
 
-                        <!-- Cas HISTORIQUE : Badge Statut -->
                         <div *ngIf="activeTab === 'HISTORY'">
                           <span *ngIf="derog.statut === 'APPROUVEE'" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
                             <i class="bi bi-check-circle-fill me-1"></i> ACCORDÉE
@@ -167,29 +151,76 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     </app-main-layout>
   `,
   styles: [`
-    /* SWITCHER */
-    .switcher-container { background-color: #e2e8f0; padding: 5px; border-radius: 16px; display: inline-block; width: 100%; max-width: 500px; }
-    .switcher { display: flex; }
-    .switcher-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; font-weight: 600; color: #64748b; border-radius: 12px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-    .switcher-btn:hover { background-color: rgba(255,255,255,0.5); }
-    .switcher-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3); }
+    /* --- SWITCHER STYLES (Aligné sur UserManagement) --- */
+    .switcher-container {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .switcher {
+      background-color: #f1f5f9;
+      padding: 5px;
+      border-radius: 50px;
+      display: inline-flex;
+      gap: 5px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+    }
+
+    .switcher-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 600;
+      color: #64748b;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      cursor: pointer;
+    }
+
+    .switcher-btn:hover {
+      color: #334155;
+    }
+
+    .switcher-btn.active {
+      background-color: #ffffff;
+      color: #4f46e5; /* Couleur primaire active */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: scale(1.02);
+    }
+    .hover-scale:hover { transform: scale(1.05); }
 
     /* AVATARS & ICONS */
-    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; }
-    .bg-gradient-orange { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .avatar-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem;
+    }
+    .bg-gradient-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); } /* Un orange plus prononcé */
+    .text-light-gray { color: #cbd5e1; }
 
     /* TABLEAU */
-    .table thead th { border-bottom: 2px solid #f1f5f9; background-color: #f8fafc; font-size: 0.75rem; letter-spacing: 0.5px; padding-top: 1rem; padding-bottom: 1rem; }
-    .table tbody td { vertical-align: middle; padding-top: 1rem; padding-bottom: 1rem; }
+    .table thead th {
+      border-bottom: 2px solid #f1f5f9; background-color: #f8fafc;
+      font-size: 0.75rem; letter-spacing: 0.5px;
+      padding-top: 1rem; padding-bottom: 1rem;
+    }
+    .table tbody td { vertical-align: middle; padding-top: 0.85rem; padding-bottom: 0.85rem; }
 
     /* BADGES */
     .bg-warning-subtle { background-color: #fff7ed !important; color: #c2410c !important; border-color: #ffedd5 !important; }
     .bg-success-subtle { background-color: #dcfce7 !important; color: #166534 !important; border-color: #bbf7d0 !important; }
     .bg-danger-subtle { background-color: #fef2f2 !important; color: #991b1b !important; border-color: #fecaca !important; }
+    .bg-primary-subtle { background: #e0e7ff; color: #4338ca; }
 
     /* ANIMATION */
     .fade-in { animation: fadeIn 0.4s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in-up { animation: fadeInUp 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   `]
 })
 export class DerogationManagementComponent implements OnInit {
@@ -232,9 +263,10 @@ export class DerogationManagementComponent implements OnInit {
 
   accepter(id: number) {
     if(confirm("Accorder cette dérogation ?")) {
+      // NOTE: Le service backend peut nécessiter un motif même pour l'acceptation
       this.derogationService.validerDerogation(id, "Validée par admin").subscribe({
         next: () => {
-          alert("Validé !");
+          alert("Dérogation validée et accordée.");
           this.loadDerogations();
         },
         error: () => alert("Erreur lors de la validation")
@@ -243,11 +275,12 @@ export class DerogationManagementComponent implements OnInit {
   }
 
   refuser(id: number) {
-    const motif = prompt("Motif du refus :");
+    // Utilisation de prompt pour le motif, comme dans l'implémentation originale
+    const motif = prompt("Veuillez entrer le motif du refus pour la dérogation ID " + id + " :");
     if(motif) {
       this.derogationService.refuserDerogation(id, motif).subscribe({
         next: () => {
-          alert("Refusé.");
+          alert("Dérogation refusée.");
           this.loadDerogations();
         },
         error: () => alert("Erreur lors du refus")

@@ -9,8 +9,10 @@ import ma.enset.soutenanceservice.enums.StatutSoutenance;
 import ma.enset.soutenanceservice.services.SoutenanceService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -31,6 +33,25 @@ public class SoutenanceController {
         log.info("REST request to create soutenance for doctorant: {}", soutenance.getDoctorantId());
         Soutenance created = soutenanceService.createSoutenance(soutenance);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PostMapping(value = "/soumettre", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Soutenance> soumettreDemande(
+            @RequestParam("titre") String titre,
+            @RequestParam("doctorantId") Long doctorantId,
+            @RequestParam("directeurId") Long directeurId,
+            @RequestPart("manuscrit") MultipartFile manuscrit,
+            @RequestPart("rapportAntiPlagiat") MultipartFile rapportAntiPlagiat,
+            @RequestPart(value = "autorisation", required = false) MultipartFile autorisation
+    ) {
+        log.info("REST request to submit soutenance request for doctorant: {}", doctorantId);
+        try {
+            Soutenance soumise = soutenanceService.soumettreDemande(titre, doctorantId, directeurId, manuscrit, rapportAntiPlagiat, autorisation);
+            return ResponseEntity.status(HttpStatus.CREATED).body(soumise);
+        } catch (RuntimeException e) {
+            log.error("Error submitting soutenance request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping
