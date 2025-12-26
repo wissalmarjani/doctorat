@@ -10,6 +10,8 @@ import ma.enset.userservice.mappers.UserMapper;
 import ma.enset.userservice.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +29,11 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        // Debug: Afficher l'utilisateur authentifié
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        log.info("🔐 POST /api/users - Authenticated user: {}", auth != null ? auth.getName() : "NONE");
+        log.info("🔐 POST /api/users - Authorities: {}", auth != null ? auth.getAuthorities() : "NONE");
+
         log.info("REST request to create user: {}", user.getUsername());
         User createdUser = userService.createUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
@@ -144,6 +151,23 @@ public class UserController {
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("User Service is running!");
+    }
+
+    /**
+     * 🔍 DEBUG: Endpoint pour vérifier l'authentification actuelle
+     */
+    @GetMapping("/debug/auth")
+    public ResponseEntity<String> debugAuth() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return ResponseEntity.ok("No authentication found");
+        }
+        return ResponseEntity.ok(String.format(
+                "User: %s, Authorities: %s, Authenticated: %s",
+                auth.getName(),
+                auth.getAuthorities(),
+                auth.isAuthenticated()
+        ));
     }
 
     // ========== DTOs ==========

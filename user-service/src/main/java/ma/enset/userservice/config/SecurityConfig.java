@@ -1,6 +1,7 @@
 package ma.enset.userservice.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ma.enset.userservice.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -37,6 +39,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("🔐 Configuring Security Filter Chain...");
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -46,7 +49,6 @@ public class SecurityConfig {
                         // ================== PUBLIC ==================
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/api/auth/register-with-files",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
@@ -55,24 +57,30 @@ public class SecurityConfig {
                         // ================== FICHIERS (PUBLIC) ==================
                         .requestMatchers("/api/files/**").permitAll()
 
+                        // ================== DEBUG & TEST (PUBLIC) ==================
+                        .requestMatchers("/api/users/debug/**").permitAll()
+                        .requestMatchers("/api/users/test").permitAll()
+
+                        // ============================================================
+                        // 🔓 TEMPORAIRE: Autoriser POST /api/users sans auth (pour créer directeurs)
+                        // ⚠️ À SÉCURISER EN PRODUCTION !
+                        // ============================================================
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+
                         // ================== DIRECTEUR - Routes spécifiques ==================
-                        // ✅ Autoriser le directeur à voir les candidats EN_ATTENTE_DIRECTEUR
                         .requestMatchers(HttpMethod.GET, "/api/users/etat/**")
                         .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
 
-                        // ✅ Autoriser le directeur à voir les candidats par rôle
                         .requestMatchers(HttpMethod.GET, "/api/users/role/**")
                         .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
 
-                        // ✅ Autoriser le directeur à valider des candidatures
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/validate-directeur")
                         .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
 
-                        // ✅ NOUVEAU : Autoriser le directeur à REFUSER des candidatures
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/refuse-directeur")
                         .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
 
-                        // ================== ADMIN - Toutes les autres routes users ==================
+                        // ================== ADMIN - Autres routes users ==================
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
 
                         // ================== RESTE ==================
@@ -84,6 +92,8 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
+        log.info("🔐 Security Filter Chain configured successfully");
+        log.info("🔓 NOTE: POST /api/users is temporarily PUBLIC for testing");
         return http.build();
     }
 

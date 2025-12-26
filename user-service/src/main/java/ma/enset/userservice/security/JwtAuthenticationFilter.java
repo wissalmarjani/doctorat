@@ -32,30 +32,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
+        final String requestURI = request.getRequestURI();
+        final String method = request.getMethod();
+
+        log.info("🔐 ════════════════════════════════════════════════");
+        log.info("🔐 JwtFilter - {} {}", method, requestURI);
+
         // Récupérer le header Authorization
         final String authHeader = request.getHeader("Authorization");
+        log.info("🔐 JwtFilter - Auth Header present: {}", authHeader != null);
 
         // Vérifier si le header existe et commence par "Bearer "
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.warn("🔐 JwtFilter - ⚠️ No Bearer token found, continuing without auth");
             filterChain.doFilter(request, response);
             return;
         }
 
         // Extraire le token (enlever "Bearer ")
         final String jwt = authHeader.substring(7);
+        log.info("🔐 JwtFilter - Token extracted (length: {})", jwt.length());
 
         try {
             // Extraire le username du token
             final String username = jwtService.extractUsername(jwt);
+            log.info("🔐 JwtFilter - Username from token: {}", username);
 
             // Si username existe et pas encore authentifié
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                log.info("🔐 JwtFilter - Loading user details for: {}", username);
 
                 // Charger les détails de l'utilisateur
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                log.info("🔐 JwtFilter - User loaded: {}", userDetails.getUsername());
+                log.info("🔐 JwtFilter - User authorities: {}", userDetails.getAuthorities());
+                log.info("🔐 JwtFilter - User enabled: {}", userDetails.isEnabled());
 
                 // Valider le token
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    log.info("🔐 JwtFilter - ✅ Token is VALID");
+
                     // Créer l'objet d'authentification
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -68,13 +84,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Mettre à jour le SecurityContext
                     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    log.debug("✅ Utilisateur authentifié: {}", username);
+                    log.info("🔐 JwtFilter - ✅ Authentication set in SecurityContext");
+                    log.info("🔐 JwtFilter - ✅ Authorities in context: {}",
+                            SecurityContextHolder.getContext().getAuthentication().getAuthorities());
+                } else {
+                    log.warn("🔐 JwtFilter - ❌ Token is INVALID");
                 }
+            } else {
+                log.info("🔐 JwtFilter - Already authenticated or no username");
             }
         } catch (Exception e) {
-            log.error("❌ Erreur d'authentification JWT: {}", e.getMessage());
+            log.error("🔐 JwtFilter - ❌ Exception: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            e.printStackTrace();
         }
 
+        log.info("🔐 ════════════════════════════════════════════════");
         filterChain.doFilter(request, response);
     }
 }

@@ -17,7 +17,7 @@ export class InscriptionService {
 
   constructor() {}
 
-  // --- GESTION DES CAMPAGNES (Méthodes manquantes ajoutées) ---
+  // --- GESTION DES CAMPAGNES ---
 
   getAllCampagnes(): Observable<Campagne[]> {
     return this.http.get<Campagne[]>(this.campagneUrl);
@@ -41,6 +41,13 @@ export class InscriptionService {
 
   activerCampagne(id: number): Observable<Campagne> {
     return this.http.put<Campagne>(`${this.campagneUrl}/${id}/activer`, {});
+  }
+
+  /**
+   * ✅ NOUVELLE MÉTHODE : Désactiver/fermer une campagne
+   */
+  desactiverCampagne(id: number): Observable<Campagne> {
+    return this.http.put<Campagne>(`${this.campagneUrl}/${id}/desactiver`, {});
   }
 
   // --- INSCRIPTIONS (Lecture) ---
@@ -70,14 +77,14 @@ export class InscriptionService {
   }
 
   /**
-   * ✅ MÉTHODE AJOUTÉE : Récupérer les inscriptions d'un doctorant spécifique (Admin View)
+   * Récupérer les inscriptions d'un doctorant spécifique (Admin View)
    */
   getByDoctorant(doctorantId: number): Observable<Inscription[]> {
     return this.http.get<Inscription[]>(`${this.apiUrl}/doctorant/${doctorantId}`);
   }
 
   /**
-   * ✅ MÉTHODE AJOUTÉE : Récupérer les inscriptions pour un directeur
+   * Récupérer les inscriptions pour un directeur
    */
   getInscriptionsByDirecteur(directeurId: number): Observable<Inscription[]> {
     return this.http.get<Inscription[]>(`${this.apiUrl}/directeur/${directeurId}`);

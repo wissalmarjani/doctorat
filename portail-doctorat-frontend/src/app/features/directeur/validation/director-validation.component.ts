@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '@core/services/user.service';
+import { AuthService } from '@core/services/auth.service';
 import { User } from '@core/models/user.model';
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 
@@ -11,218 +12,706 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     imports: [CommonModule, MainLayoutComponent, FormsModule],
     template: `
         <app-main-layout>
-            <div class="page-container p-4">
+            <div class="page-container">
 
-                <!-- HEADER -->
-                <div class="d-flex justify-content-between align-items-end mb-4">
-                    <div>
-                        <h2 class="fw-bold text-dark mb-2">Validation des Inscriptions</h2>
-                        <p class="text-muted mb-0">Liste des candidats validés par l'administration, en attente de votre accord.</p>
+                <!-- Hero Header -->
+                <div class="hero-section">
+                    <div class="hero-content">
+                        <div class="hero-icon">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                        <div>
+                            <h1 class="hero-title">Validation des Candidatures</h1>
+                            <p class="hero-subtitle">Candidats qui vous ont été assignés par l'administration</p>
+                        </div>
                     </div>
-                    <button class="btn btn-white border shadow-sm text-primary fw-bold rounded-pill px-4 d-flex align-items-center gap-2 hover-scale"
-                            (click)="loadData()"
-                            [disabled]="isLoading()">
+                    <button class="btn-refresh-hero" (click)="loadData()" [disabled]="isLoading()">
                         @if (isLoading()) {
-                            <span class="spinner-border spinner-border-sm"></span>
+                            <span class="spinner"></span>
                         } @else {
                             <i class="bi bi-arrow-clockwise"></i>
                         }
                         Actualiser
                     </button>
-                </div>
-
-                <!-- TABLEAU -->
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden fade-in-up">
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead class="bg-light text-uppercase text-muted small fw-bold">
-                            <tr>
-                                <th class="ps-4 py-3">Candidat</th>
-                                <th>Contact</th>
-                                <th>Statut Actuel</th>
-                                <th class="text-end pe-4">Détails</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                                @for (user of pendingUsers(); track user.id) {
-                                    <!-- Ligne Principale -->
-                                    <tr class="cursor-pointer main-row"
-                                        [class.expanded]="expandedUserId() === user.id"
-                                        (click)="toggleExpand(user.id)">
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="avatar-circle shadow-sm">
-                                                    {{ user.nom?.charAt(0)?.toUpperCase() || '?' }}
-                                                </div>
-                                                <div>
-                                                    <div class="fw-bold text-dark">{{ user.nom }} {{ user.prenom }}</div>
-                                                    <div class="small text-muted font-monospace">Mat: {{ user.username }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="text-dark">{{ user.email }}</div>
-                                            <div class="small text-muted">{{ user.telephone || 'Non renseigné' }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge rounded-pill px-3 py-2" [ngClass]="getEtatBadgeClass(user.etat)">
-                                                {{ formatEtat(user.etat) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <i class="bi bi-chevron-down transition-icon"
-                                               [class.rotate]="expandedUserId() === user.id"></i>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Ligne Détails (Visible au clic) -->
-                                    @if (expandedUserId() === user.id) {
-                                        <tr class="detail-row">
-                                            <td colspan="4" class="p-0 border-0">
-                                                <div class="detail-panel p-4">
-                                                    <div class="row g-4">
-
-                                                        <!-- COLONNE 1 : DOCUMENTS -->
-                                                        <div class="col-md-6">
-                                                            <div class="detail-card h-100">
-                                                                <h6 class="section-title text-primary">
-                                                                    <i class="bi bi-folder2-open me-2"></i>Dossier Numérique
-                                                                </h6>
-                                                                <div class="docs-grid mt-3">
-                                                                    <!-- CV -->
-                                                                    <div class="doc-item" [class.disabled]="!user.cv" (click)="viewDocument(user.cv, $event)">
-                                                                        <div class="icon-box bg-purple-subtle">
-                                                                            <i class="bi bi-file-earmark-person-fill text-purple"></i>
-                                                                        </div>
-                                                                        <span class="doc-label">Curriculum Vitae</span>
-                                                                    </div>
-
-                                                                    <!-- Diplôme -->
-                                                                    <div class="doc-item" [class.disabled]="!user.diplome" (click)="viewDocument(user.diplome, $event)">
-                                                                        <div class="icon-box bg-blue-subtle">
-                                                                            <i class="bi bi-mortarboard-fill text-blue"></i>
-                                                                        </div>
-                                                                        <span class="doc-label">Diplôme</span>
-                                                                    </div>
-
-                                                                    <!-- Lettre -->
-                                                                    <div class="doc-item" [class.disabled]="!user.lettreMotivation" (click)="viewDocument(user.lettreMotivation, $event)">
-                                                                        <div class="icon-box bg-orange-subtle">
-                                                                            <i class="bi bi-envelope-paper-fill text-orange"></i>
-                                                                        </div>
-                                                                        <span class="doc-label">Lettre de Motivation</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- COLONNE 2 : DECISION DIRECTEUR -->
-                                                        <div class="col-md-6">
-                                                            <div class="detail-card h-100 border-start-decision">
-                                                                <h6 class="section-title text-dark"><i class="bi bi-pen-fill me-2"></i>Avis du Directeur</h6>
-
-                                                                <!-- Boutons Accepter / Refuser -->
-                                                                @if (showRefusalInputId() !== user.id) {
-                                                                    <div class="decision-buttons mt-3">
-                                                                        <button class="btn btn-success btn-decision"
-                                                                                (click)="accepter(user, $event)">
-                                                                            <i class="bi bi-check-lg me-2"></i>Accepter et Inscrire
-                                                                        </button>
-                                                                        <button class="btn btn-danger btn-decision"
-                                                                                (click)="initiateRefusal(user.id, $event)">
-                                                                            <i class="bi bi-x-lg me-2"></i>Refuser le dossier
-                                                                        </button>
-                                                                    </div>
-                                                                } @else {
-                                                                    <!-- Zone Refus (Saisie du motif) -->
-                                                                    <div class="refusal-box mt-3 fade-in">
-                                                                        <label class="refusal-label">
-                                                                            <i class="bi bi-chat-left-text me-2"></i>Motif du refus :
-                                                                        </label>
-                                                                        <textarea
-                                                                                class="form-control refusal-textarea"
-                                                                                rows="3"
-                                                                                [(ngModel)]="motifText"
-                                                                                placeholder="Ex: Sujet non pertinent, dossier incomplet...">
-                                                                        </textarea>
-                                                                        <div class="refusal-actions">
-                                                                            <button class="btn btn-light flex-grow-1" (click)="cancelRefusal($event)">
-                                                                                <i class="bi bi-arrow-left me-1"></i>Annuler
-                                                                            </button>
-                                                                            <button class="btn btn-danger flex-grow-1"
-                                                                                    [disabled]="!motifText.trim()"
-                                                                                    (click)="confirmerRefus(user, $event)">
-                                                                                <i class="bi bi-x-circle me-1"></i>Confirmer le refus
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                }
-
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                @if (pendingUsers().length === 0 && !isLoading()) {
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5 text-muted">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
-                                            Aucune candidature en attente.
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                    <div class="hero-decoration">
+                        <div class="decoration-circle c1"></div>
+                        <div class="decoration-circle c2"></div>
                     </div>
                 </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon pending">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">{{ pendingUsers().length }}</span>
+                            <span class="stat-label">En attente</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">{{ currentDirectorName() }}</span>
+                            <span class="stat-label">Connecté en tant que</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                @if (isLoading()) {
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <span>Chargement des candidatures...</span>
+                    </div>
+                }
+
+                <!-- Empty State -->
+                @if (pendingUsers().length === 0 && !isLoading()) {
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-inbox"></i>
+                        </div>
+                        <h3 class="empty-title">Aucune candidature en attente</h3>
+                        <p class="empty-text">Vous n'avez actuellement aucun candidat assigné en attente de validation.</p>
+                    </div>
+                }
+
+                <!-- Candidatures List -->
+                @if (pendingUsers().length > 0 && !isLoading()) {
+                    <div class="list-section">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="bi bi-people me-2"></i>
+                                Candidats assignés
+                            </h3>
+                            <span class="count-badge">{{ pendingUsers().length }}</span>
+                        </div>
+
+                        <div class="candidates-list">
+                            @for (user of pendingUsers(); track user.id) {
+                                <div class="candidate-card" [class.expanded]="expandedUserId() === user.id">
+                                    <!-- Main Row -->
+                                    <div class="card-main" (click)="toggleExpand(user.id)">
+                                        <div class="card-left">
+                                            <div class="avatar">
+                                                {{ user.nom?.charAt(0)?.toUpperCase() || '?' }}
+                                            </div>
+                                        </div>
+
+                                        <div class="card-content">
+                                            <div class="candidate-name">{{ user.nom }} {{ user.prenom }}</div>
+                                            <div class="candidate-info">
+                        <span class="info-item">
+                          <i class="bi bi-envelope"></i>
+                            {{ user.email }}
+                        </span>
+                                                <span class="info-item">
+                          <i class="bi bi-phone"></i>
+                                                    {{ user.telephone || 'Non renseigné' }}
+                        </span>
+                                            </div>
+                                            <div class="candidate-meta">
+                        <span class="meta-badge matricule">
+                          <i class="bi bi-hash"></i>
+                            {{ user.username }}
+                        </span>
+                                                <span class="meta-badge status">
+                          <i class="bi bi-clock-history"></i>
+                          En attente de votre avis
+                        </span>
+                                            </div>
+                                        </div>
+
+                                        <div class="card-right">
+                                            <i class="bi bi-chevron-down expand-icon" [class.rotated]="expandedUserId() === user.id"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expanded Details -->
+                                    @if (expandedUserId() === user.id) {
+                                        <div class="card-details">
+                                            <div class="details-grid">
+                                                <!-- Documents -->
+                                                <div class="detail-section">
+                                                    <h5 class="detail-title">
+                                                        <i class="bi bi-folder2-open"></i>
+                                                        Documents du dossier
+                                                    </h5>
+                                                    <div class="documents-list">
+                                                        <div class="doc-item" [class.available]="user.cv" (click)="viewDocument(user.cv, $event)">
+                                                            <div class="doc-icon cv">
+                                                                <i class="bi bi-file-earmark-person"></i>
+                                                            </div>
+                                                            <div class="doc-info">
+                                                                <span class="doc-name">Curriculum Vitae</span>
+                                                                <span class="doc-status">{{ user.cv ? 'Disponible' : 'Non fourni' }}</span>
+                                                            </div>
+                                                            @if (user.cv) {
+                                                                <i class="bi bi-eye doc-action"></i>
+                                                            }
+                                                        </div>
+
+                                                        <div class="doc-item" [class.available]="user.diplome" (click)="viewDocument(user.diplome, $event)">
+                                                            <div class="doc-icon diploma">
+                                                                <i class="bi bi-mortarboard"></i>
+                                                            </div>
+                                                            <div class="doc-info">
+                                                                <span class="doc-name">Diplôme</span>
+                                                                <span class="doc-status">{{ user.diplome ? 'Disponible' : 'Non fourni' }}</span>
+                                                            </div>
+                                                            @if (user.diplome) {
+                                                                <i class="bi bi-eye doc-action"></i>
+                                                            }
+                                                        </div>
+
+                                                        <div class="doc-item" [class.available]="user.lettreMotivation" (click)="viewDocument(user.lettreMotivation, $event)">
+                                                            <div class="doc-icon letter">
+                                                                <i class="bi bi-envelope-paper"></i>
+                                                            </div>
+                                                            <div class="doc-info">
+                                                                <span class="doc-name">Lettre de motivation</span>
+                                                                <span class="doc-status">{{ user.lettreMotivation ? 'Disponible' : 'Non fourni' }}</span>
+                                                            </div>
+                                                            @if (user.lettreMotivation) {
+                                                                <i class="bi bi-eye doc-action"></i>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Decision -->
+                                                <div class="detail-section decision">
+                                                    <h5 class="detail-title">
+                                                        <i class="bi bi-check2-square"></i>
+                                                        Votre décision
+                                                    </h5>
+
+                                                    @if (showRefusalInputId() !== user.id && showAcceptInputId() !== user.id) {
+                                                        <div class="decision-buttons">
+                                                            <button class="btn-decision accept" (click)="initiateAccept(user.id, $event)">
+                                                                <i class="bi bi-check-lg"></i>
+                                                                <span>Accepter et Inscrire</span>
+                                                            </button>
+                                                            <button class="btn-decision reject" (click)="initiateRefusal(user.id, $event)">
+                                                                <i class="bi bi-x-lg"></i>
+                                                                <span>Refuser le dossier</span>
+                                                            </button>
+                                                        </div>
+                                                        <p class="decision-hint">
+                                                            <i class="bi bi-info-circle"></i>
+                                                            En acceptant, le candidat deviendra officiellement doctorant sous votre direction.
+                                                        </p>
+                                                    } @else if (showAcceptInputId() === user.id) {
+                                                        <div class="accept-form">
+                                                            <label class="accept-label">
+                                                                <i class="bi bi-journal-text"></i>
+                                                                Sujet / Titre de la thèse *
+                                                            </label>
+                                                            <textarea
+                                                                    class="accept-textarea"
+                                                                    rows="3"
+                                                                    [(ngModel)]="sujetTheseText"
+                                                                    placeholder="Entrez le sujet de thèse du doctorant (obligatoire)...">
+                              </textarea>
+                                                            <div class="accept-actions">
+                                                                <button class="btn-cancel" (click)="cancelAccept($event)">
+                                                                    <i class="bi bi-arrow-left"></i>
+                                                                    Annuler
+                                                                </button>
+                                                                <button
+                                                                        class="btn-confirm-accept"
+                                                                        [disabled]="!sujetTheseText.trim()"
+                                                                        (click)="confirmerAccept(user, $event)">
+                                                                    <i class="bi bi-check-circle"></i>
+                                                                    Confirmer l'inscription
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    } @else {
+                                                        <div class="refusal-form">
+                                                            <label class="refusal-label">
+                                                                <i class="bi bi-chat-left-text"></i>
+                                                                Motif du refus
+                                                            </label>
+                                                            <textarea
+                                                                    class="refusal-textarea"
+                                                                    rows="3"
+                                                                    [(ngModel)]="motifText"
+                                                                    placeholder="Expliquez la raison du refus (obligatoire)...">
+                              </textarea>
+                                                            <div class="refusal-actions">
+                                                                <button class="btn-cancel" (click)="cancelRefusal($event)">
+                                                                    <i class="bi bi-arrow-left"></i>
+                                                                    Annuler
+                                                                </button>
+                                                                <button
+                                                                        class="btn-confirm-reject"
+                                                                        [disabled]="!motifText.trim()"
+                                                                        (click)="confirmerRefus(user, $event)">
+                                                                    <i class="bi bi-x-circle"></i>
+                                                                    Confirmer le refus
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
             </div>
         </app-main-layout>
     `,
     styles: [`
-      /* TABLEAU */
-      .main-row { transition: background 0.2s; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
-      .main-row:hover { background-color: #f8fafc; }
-      .main-row.expanded { background-color: #eef2ff; border-left: 4px solid #4f46e5; }
+      .page-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1.5rem 3rem;
+      }
 
-      .avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; }
-      .transition-icon { transition: transform 0.3s; }
-      .rotate { transform: rotate(180deg); }
-
-      /* DETAIL PANEL */
-      .detail-row { background-color: #f8fafc; box-shadow: inset 0 6px 10px -8px rgba(0,0,0,0.1); }
-      .detail-panel { animation: slideDown 0.3s ease-out; }
-      .detail-card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
-      .section-title { font-weight: 800; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 0; }
-
-      /* DOCUMENTS - Style horizontal compact */
-      .docs-grid {
+      /* Hero Section */
+      .hero-section {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        border-radius: 24px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
         display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .hero-content {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        color: white;
+      }
+
+      .hero-title {
+        color: white;
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin: 0;
+      }
+
+      .hero-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0.25rem 0 0;
+        font-size: 0.95rem;
+      }
+
+      .btn-refresh-hero {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: white;
+        color: #6d28d9;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-refresh-hero:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(109, 40, 217, 0.2);
+        border-top-color: #6d28d9;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .hero-decoration {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 200px;
+      }
+
+      .decoration-circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .c1 { width: 120px; height: 120px; top: -30px; right: 40px; }
+      .c2 { width: 80px; height: 80px; bottom: -20px; right: 120px; }
+
+      /* Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+      }
+
+      .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+      }
+
+      .stat-icon.pending { background: #fef3c7; color: #f59e0b; }
+      .stat-icon.info { background: #ede9fe; color: #8b5cf6; }
+
+      .stat-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+
+      .stat-label {
+        font-size: 0.8rem;
+        color: #64748b;
+      }
+
+      /* Loading & Empty States */
+      .loading-state, .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+      }
+
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #8b5cf6;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 1rem;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .empty-icon {
+        width: 80px;
+        height: 80px;
+        background: #ede9fe;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .empty-icon i {
+        font-size: 2.5rem;
+        color: #8b5cf6;
+      }
+
+      .empty-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.5rem;
+      }
+
+      .empty-text {
+        color: #64748b;
+        margin: 0;
+      }
+
+      /* List Section */
+      .list-section {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .section-title i {
+        color: #8b5cf6;
+      }
+
+      .count-badge {
+        background: #8b5cf6;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      /* Candidates List */
+      .candidates-list {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .candidate-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+
+      .candidate-card:hover {
+        border-color: #c4b5fd;
+      }
+
+      .candidate-card.expanded {
+        border-color: #8b5cf6;
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
+      }
+
+      .card-main {
+        display: flex;
+        align-items: center;
+        padding: 1.25rem;
+        cursor: pointer;
+      }
+
+      .card-left {
+        margin-right: 1rem;
+      }
+
+      .avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+
+      .card-content {
+        flex: 1;
+      }
+
+      .candidate-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+
+      .candidate-info {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.25rem;
+      }
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.85rem;
+        color: #64748b;
+      }
+
+      .info-item i {
+        color: #94a3b8;
+      }
+
+      .candidate-meta {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+
+      .meta-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .meta-badge.matricule {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      .meta-badge.status {
+        background: #fef3c7;
+        color: #b45309;
+      }
+
+      .card-right {
+        padding-left: 1rem;
+      }
+
+      .expand-icon {
+        color: #94a3b8;
+        font-size: 1.25rem;
+        transition: transform 0.3s;
+      }
+
+      .expand-icon.rotated {
+        transform: rotate(180deg);
+      }
+
+      /* Card Details */
+      .card-details {
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+
+      .detail-section {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 1.25rem;
+        border: 1px solid #e2e8f0;
+      }
+
+      .detail-section.decision {
+        border-left: 4px solid #8b5cf6;
+      }
+
+      .detail-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .detail-title i {
+        color: #8b5cf6;
+      }
+
+      /* Documents */
+      .documents-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
       }
 
       .doc-item {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: white;
+        border: 1px dashed #cbd5e1;
         border-radius: 10px;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-        flex: 1;
-        min-width: 140px;
+        opacity: 0.6;
+        cursor: not-allowed;
       }
-      .doc-item:hover { border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79,70,229,0.1); transform: translateY(-2px); }
-      .doc-item.disabled { opacity: 0.5; cursor: not-allowed; background: #f8fafc; border-style: dashed; }
 
-      .icon-box {
+      .doc-item.available {
+        opacity: 1;
+        border-style: solid;
+        border-color: #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .doc-item.available:hover {
+        border-color: #8b5cf6;
+        background: #faf5ff;
+      }
+
+      .doc-icon {
         width: 36px;
         height: 36px;
         border-radius: 8px;
@@ -230,121 +719,304 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
         align-items: center;
         justify-content: center;
         font-size: 1rem;
-        flex-shrink: 0;
       }
 
-      .doc-label {
+      .doc-icon.cv { background: #f3e8ff; color: #9333ea; }
+      .doc-icon.diploma { background: #dbeafe; color: #2563eb; }
+      .doc-icon.letter { background: #ffedd5; color: #ea580c; }
+
+      .doc-info {
+        flex: 1;
+      }
+
+      .doc-name {
+        display: block;
         font-weight: 600;
-        font-size: 0.8rem;
-        color: #334155;
-        white-space: nowrap;
+        font-size: 0.85rem;
+        color: #1e293b;
       }
 
-      /* Couleurs des icônes */
-      .bg-purple-subtle { background: #f3e8ff; }
-      .text-purple { color: #9333ea; }
-      .bg-blue-subtle { background: #dbeafe; }
-      .text-blue { color: #2563eb; }
-      .bg-orange-subtle { background: #ffedd5; }
-      .text-orange { color: #ea580c; }
+      .doc-status {
+        display: block;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
 
-      /* BOUTONS DECISION */
-      .border-start-decision { border-left: 4px solid #cbd5e1; }
+      .doc-action {
+        color: #8b5cf6;
+        font-size: 1.1rem;
+      }
 
+      /* Decision Buttons */
       .decision-buttons {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 0.75rem;
       }
 
       .btn-decision {
-        padding: 14px 20px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 0.5rem;
+        padding: 0.875rem 1rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
         transition: all 0.2s;
       }
-      .btn-decision:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+      .btn-decision.accept {
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
       }
 
-      /* ZONE REFUS - Bien formatée */
-      .refusal-box {
+      .btn-decision.accept:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+      }
+
+      .btn-decision.reject {
+        background: white;
+        color: #dc2626;
+        border: 2px solid #fecaca;
+      }
+
+      .btn-decision.reject:hover {
+        background: #fef2f2;
+        border-color: #dc2626;
+      }
+
+      .decision-hint {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin: 1rem 0 0;
+        padding: 0.75rem;
+        background: #ede9fe;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: #6d28d9;
+      }
+
+      .decision-hint i {
+        margin-top: 0.1rem;
+      }
+
+      /* Refusal Form */
+      .refusal-form {
         background: #fef2f2;
         border: 1px solid #fecaca;
         border-radius: 12px;
-        padding: 16px;
+        padding: 1rem;
       }
 
       .refusal-label {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         font-size: 0.85rem;
-        font-weight: 700;
+        font-weight: 600;
         color: #dc2626;
-        margin-bottom: 12px;
-        white-space: nowrap;
+        margin-bottom: 0.75rem;
       }
 
       .refusal-textarea {
-        background: #fff;
+        width: 100%;
+        padding: 0.75rem;
         border: 1px solid #fecaca;
         border-radius: 8px;
         font-size: 0.9rem;
         resize: none;
-        width: 100%;
+        background: white;
       }
+
       .refusal-textarea:focus {
+        outline: none;
         border-color: #f87171;
         box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
-        outline: none;
       }
 
       .refusal-actions {
         display: flex;
-        gap: 10px;
-        margin-top: 12px;
+        gap: 0.75rem;
+        margin-top: 1rem;
       }
-      .refusal-actions .btn {
-        padding: 10px 16px;
+
+      .btn-cancel, .btn-confirm-reject {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
         font-weight: 600;
         font-size: 0.85rem;
-        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
       }
 
-      /* ANIMATIONS */
-      .fade-in { animation: fadeIn 0.3s; }
-      .fade-in-up { animation: fadeInUp 0.4s ease-out; }
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      .btn-cancel {
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+      }
 
-      /* BADGES */
-      .bg-info-subtle { background: #e0f2fe; color: #0369a1; }
-      .bg-success-subtle { background: #dcfce7; color: #15803d; }
-      .bg-danger-subtle { background: #fee2e2; color: #b91c1c; }
-      .bg-warning-subtle { background: #fef3c7; color: #b45309; }
+      .btn-cancel:hover {
+        background: #f8fafc;
+      }
+
+      .btn-confirm-reject {
+        background: #dc2626;
+        border: none;
+        color: white;
+      }
+
+      .btn-confirm-reject:hover:not(:disabled) {
+        background: #b91c1c;
+      }
+
+      .btn-confirm-reject:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Accept Form */
+      .accept-form {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 12px;
+        padding: 1rem;
+      }
+
+      .accept-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #15803d;
+        margin-bottom: 0.75rem;
+      }
+
+      .accept-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #86efac;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        resize: none;
+        background: white;
+      }
+
+      .accept-textarea:focus {
+        outline: none;
+        border-color: #22c55e;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+      }
+
+      .accept-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .btn-confirm-accept {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #22c55e;
+        border: none;
+        color: white;
+      }
+
+      .btn-confirm-accept:hover:not(:disabled) {
+        background: #16a34a;
+      }
+
+      .btn-confirm-accept:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .hero-section {
+          flex-direction: column;
+          gap: 1.5rem;
+          text-align: center;
+        }
+
+        .hero-content {
+          flex-direction: column;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .details-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .candidate-info {
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+      }
     `]
 })
 export class DirectorValidationComponent implements OnInit {
     pendingUsers = signal<User[]>([]);
     expandedUserId = signal<number | null>(null);
     showRefusalInputId = signal<number | null>(null);
+    showAcceptInputId = signal<number | null>(null);
     isLoading = signal(false);
     motifText = '';
+    sujetTheseText = '';
 
-    constructor(private userService: UserService) {}
+    constructor(
+        private userService: UserService,
+        private authService: AuthService
+    ) {}
 
-    ngOnInit() { this.loadData(); }
+    ngOnInit() {
+        this.loadData();
+    }
+
+    currentDirectorName(): string {
+        const user = this.authService.currentUser();
+        return user ? `${user.prenom} ${user.nom}` : 'Directeur';
+    }
 
     loadData() {
         this.isLoading.set(true);
+        const currentUser = this.authService.currentUser();
+
+        if (!currentUser?.id) {
+            console.error('Utilisateur non connecté');
+            this.isLoading.set(false);
+            return;
+        }
+
+        // ✅ Récupérer les candidats EN_ATTENTE_DIRECTEUR assignés à CE directeur
         this.userService.getUsersByEtat('EN_ATTENTE_DIRECTEUR').subscribe({
             next: users => {
-                this.pendingUsers.set(users);
+                // Filtrer pour n'afficher que les candidats assignés à ce directeur
+                const myPendingUsers = users.filter(u => u.directeurId === currentUser.id);
+                this.pendingUsers.set(myPendingUsers);
                 this.isLoading.set(false);
             },
             error: (err) => {
@@ -358,30 +1030,61 @@ export class DirectorValidationComponent implements OnInit {
         if (this.expandedUserId() === id) {
             this.expandedUserId.set(null);
             this.showRefusalInputId.set(null);
+            this.showAcceptInputId.set(null);
             this.motifText = '';
+            this.sujetTheseText = '';
         } else {
             this.expandedUserId.set(id);
             this.showRefusalInputId.set(null);
+            this.showAcceptInputId.set(null);
             this.motifText = '';
+            this.sujetTheseText = '';
         }
     }
 
     viewDocument(filename: string | undefined, event: Event) {
         event.stopPropagation();
-        if (filename) window.open(this.userService.getDocumentUrl(filename), '_blank');
+        if (filename) {
+            window.open(this.userService.getDocumentUrl(filename), '_blank');
+        }
     }
 
-    accepter(user: User, event: Event) {
+    // ==================== ACCEPTATION AVEC SUJET ====================
+
+    initiateAccept(id: number, event: Event) {
         event.stopPropagation();
-        if(confirm(`Confirmer l'inscription de ${user.nom} ${user.prenom} ?`)) {
-            this.userService.validerCandidatureDirecteur(user.id).subscribe({
+        this.showAcceptInputId.set(id);
+        this.showRefusalInputId.set(null);
+        this.sujetTheseText = '';
+    }
+
+    cancelAccept(event: Event) {
+        event.stopPropagation();
+        this.showAcceptInputId.set(null);
+        this.sujetTheseText = '';
+    }
+
+    confirmerAccept(user: User, event: Event) {
+        event.stopPropagation();
+
+        if (!this.sujetTheseText.trim()) {
+            alert('Veuillez saisir le sujet de thèse.');
+            return;
+        }
+
+        if (confirm(`Confirmer l'inscription de ${user.nom} ${user.prenom} avec ce sujet de thèse ?`)) {
+            // Appel API avec le sujet de thèse
+            this.userService.validerCandidatureDirecteurAvecSujet(user.id, this.sujetTheseText.trim()).subscribe({
                 next: () => {
-                    alert('Candidature validée avec succès ! Le candidat est maintenant DOCTORANT.');
+                    alert('✅ Candidature validée ! Le candidat est maintenant doctorant.');
                     this.loadData();
+                    this.expandedUserId.set(null);
+                    this.showAcceptInputId.set(null);
+                    this.sujetTheseText = '';
                 },
                 error: (err) => {
                     console.error('Erreur validation:', err);
-                    alert('Erreur lors de la validation. Vérifiez la console.');
+                    alert('❌ Erreur lors de la validation.');
                 }
             });
         }
@@ -407,36 +1110,20 @@ export class DirectorValidationComponent implements OnInit {
             return;
         }
 
-        if(confirm(`Refuser définitivement le dossier de ${user.nom} ${user.prenom} ?`)) {
-            console.log('Envoi refus pour user:', user.id, 'motif:', this.motifText.trim());
-
-            // ✅ UTILISE LA NOUVELLE MÉTHODE SPÉCIFIQUE AU DIRECTEUR
+        if (confirm(`Refuser définitivement le dossier de ${user.nom} ${user.prenom} ?`)) {
             this.userService.refuserCandidatureDirecteur(user.id, this.motifText.trim()).subscribe({
-                next: (response) => {
-                    console.log('Réponse refus:', response);
+                next: () => {
                     alert('Candidature refusée.');
                     this.loadData();
                     this.showRefusalInputId.set(null);
                     this.motifText = '';
+                    this.expandedUserId.set(null);
                 },
                 error: (err) => {
                     console.error('Erreur refus:', err);
-                    alert('Erreur lors du refus: ' + (err.status === 403 ? 'Permission refusée' : err.error?.message || 'Erreur inconnue'));
+                    alert('Erreur lors du refus.');
                 }
             });
         }
-    }
-
-    formatEtat(etat: string | undefined) {
-        if (!etat) return 'Nouveau';
-        if (etat === 'EN_ATTENTE_DIRECTEUR') return 'Attente Directeur';
-        return etat.replace(/_/g, ' ');
-    }
-
-    getEtatBadgeClass(etat: string | undefined) {
-        if (etat === 'VALIDE') return 'bg-success-subtle';
-        if (etat === 'REFUSE') return 'bg-danger-subtle';
-        if (etat === 'EN_ATTENTE_DIRECTEUR') return 'bg-info-subtle';
-        return 'bg-warning-subtle';
     }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Soutenance } from '../models/soutenance.model';
@@ -9,10 +9,12 @@ import { Soutenance } from '../models/soutenance.model';
 })
 export class SoutenanceService {
 
-    // URL de base vers le microservice soutenance
-    private baseUrl = `${environment.userServiceUrl}/soutenances`;
+    // ✅ CORRIGÉ : Utilise soutenanceServiceUrl (port 8083) au lieu de userServiceUrl (port 8081)
+    private baseUrl = `${environment.soutenanceServiceUrl}/soutenances`;
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) {
+        console.log('🔧 SoutenanceService - Base URL:', this.baseUrl);
+    }
 
     // =====================================================
     // MÉTHODES GÉNÉRALES / ADMIN
@@ -40,7 +42,7 @@ export class SoutenanceService {
 
     /** Valider les prérequis d'une soutenance (Admin) */
     validerPrerequis(soutenanceId: number): Observable<Soutenance> {
-        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/valider-prerequis`, {});
+        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/verifier-prerequis`, {});
     }
 
     /** Rejeter une demande de soutenance (Admin) */
@@ -50,25 +52,31 @@ export class SoutenanceService {
 
     /** Planifier une soutenance (Admin) */
     planifierSoutenance(soutenanceId: number, data: {
-        dateSoutenance: string;
-        heureSoutenance: string;
-        lieuSoutenance: string;
+        date: string;      // Format: YYYY-MM-DD
+        heure: string;     // Format: HH:mm
+        lieu: string;
     }): Observable<Soutenance> {
-        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/planifier`, data);
+        // Le backend attend des query params, pas un body
+        const params = new HttpParams()
+            .set('date', data.date)
+            .set('heure', data.heure)
+            .set('lieu', data.lieu);
+
+        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/planifier`, null, { params });
     }
 
     /** Autoriser une soutenance (Admin) */
-    autoriserSoutenance(soutenanceId: number): Observable<Soutenance> {
-        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/autoriser`, {});
+    autoriserSoutenance(soutenanceId: number, commentaire?: string): Observable<Soutenance> {
+        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/autoriser`, { commentaire });
     }
 
-    /** Marquer une soutenance comme terminée (Admin) */
-    terminerSoutenance(soutenanceId: number, data: {
+    /** Enregistrer le résultat d'une soutenance (Admin) */
+    enregistrerResultat(soutenanceId: number, data: {
+        note: number;
         mention: string;
-        noteFinale?: number;
-        felicitationsJury?: boolean;
+        felicitations?: boolean;
     }): Observable<Soutenance> {
-        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/terminer`, data);
+        return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/resultat`, data);
     }
 
     // =====================================================
@@ -96,6 +104,17 @@ export class SoutenanceService {
      */
     proposerJury(soutenanceId: number): Observable<Soutenance> {
         return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/proposer-jury`, {});
+    }
+
+    /** Soumettre un rapport de rapporteur */
+    soumettreRapport(soutenanceId: number, membreJuryId: number, data: {
+        avisFavorable: boolean;
+        commentaire?: string;
+    }): Observable<Soutenance> {
+        return this.http.put<Soutenance>(
+            `${this.baseUrl}/${soutenanceId}/jury/${membreJuryId}/rapport`,
+            data
+        );
     }
 
     // =====================================================
@@ -136,7 +155,7 @@ export class SoutenanceService {
     /** Créer une nouvelle demande de soutenance (brouillon) */
     creerDemande(data: {
         doctorantId: number;
-        sujetThese: string;
+        titreThese: string;
         prerequis?: {
             nombreArticlesQ1Q2: number;
             nombreConferences: number;
@@ -149,5 +168,14 @@ export class SoutenanceService {
     /** Soumettre une demande existante (passer de BROUILLON à SOUMIS) */
     soumettreDemandeExistante(soutenanceId: number): Observable<Soutenance> {
         return this.http.put<Soutenance>(`${this.baseUrl}/${soutenanceId}/soumettre`, {});
+    }
+
+    // =====================================================
+    // MÉTHODE DE TEST
+    // =====================================================
+
+    /** Tester la connexion au service */
+    testConnection(): Observable<string> {
+        return this.http.get(`${this.baseUrl}/test`, { responseType: 'text' });
     }
 }

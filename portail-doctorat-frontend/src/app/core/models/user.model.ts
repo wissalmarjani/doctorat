@@ -1,6 +1,6 @@
 export interface User {
   id: number;
-  username: string;
+  username: string; // Sert de Matricule ou CNIE
   email: string;
   nom: string;
   prenom: string;
@@ -8,24 +8,29 @@ export interface User {
   enabled: boolean;
   telephone?: string;
 
-  // Documents
+  // Documents (Noms des fichiers stockés sur le serveur)
   cv?: string;
   diplome?: string;
   lettreMotivation?: string;
 
-  // Workflow
-  etat?: EtatCandidature | string;
-  motifRefus?: string;
+  // Gestion du Workflow
+  etat?: EtatCandidature | string; // Ex: EN_ATTENTE_ADMIN
+  motifRefus?: string;             // Rempli si refusé
 
-  // ✅ Directeur assigné
+  // ✅ Directeur de thèse assigné
   directeurId?: number;
 
-  // Suivi Doctorant
+  // ✅ Sujet de thèse (assigné par le directeur lors de l'acceptation)
+  sujetThese?: string;
+
+  // ✅ Champs pour le suivi
   dateInscription?: string;
-  anneeThese?: number;
-  nbPublications?: number;
-  nbConferences?: number;
-  heuresFormation?: number;
+  anneeThese?: number;      // 1, 2, 3, 4, 5, 6
+
+  // Progression Prérequis
+  nbPublications?: number;  // Requis: 2
+  nbConferences?: number;   // Requis: 2
+  heuresFormation?: number; // Requis: 200
 
   createdAt?: string;
   updatedAt?: string;
