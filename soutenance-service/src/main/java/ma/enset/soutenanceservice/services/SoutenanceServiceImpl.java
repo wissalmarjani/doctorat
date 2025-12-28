@@ -40,6 +40,10 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
     private final Path rootLocation = Paths.get("uploads/soutenances");
 
+    // ========================================================
+    // CRUD DE BASE
+    // ========================================================
+
     @Override
     public Soutenance createSoutenance(Soutenance soutenance) {
         log.info("Creating soutenance for doctorant: {}", soutenance.getDoctorantId());
@@ -50,8 +54,9 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         try {
             doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
             directeur = userServiceClient.getUserById(soutenance.getDirecteurId());
-            log.info("Doctorant vérifié: {} {}", doctorant.getNom(), doctorant.getPrenom());
-            log.info("Directeur vérifié: {} {}", directeur.getNom(), directeur.getPrenom());
+            log.info("Doctorant vérifié: {} {} (Pubs: {}, Conf: {}, Formation: {}h)",
+                    doctorant.getPrenom(), doctorant.getNom(),
+                    doctorant.getNbPublications(), doctorant.getNbConferences(), doctorant.getHeuresFormation());
         } catch (Exception e) {
             log.error("Erreur lors de la vérification des utilisateurs: {}", e.getMessage());
             throw new RuntimeException("Impossible de vérifier les utilisateurs.");
@@ -72,7 +77,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     .status(saved.getStatut().name())
                     .build();
             eventPublisher.publishSoutenanceCreated(event);
-            log.info("✅ Événement SoutenanceCreated publié pour soutenance ID: {}", saved.getId());
         } catch (Exception e) {
             log.warn("⚠️ Impossible de publier l'événement Kafka: {}", e.getMessage());
         }
@@ -104,10 +108,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     private String saveFile(MultipartFile file, String prefix) {
         try {
             if (file == null || file.isEmpty()) return null;
-
-            if (!Files.exists(rootLocation)) {
-                Files.createDirectories(rootLocation);
-            }
+            if (!Files.exists(rootLocation)) Files.createDirectories(rootLocation);
 
             String extension = "";
             if (file.getOriginalFilename() != null && file.getOriginalFilename().contains(".")) {
@@ -117,7 +118,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
             String filename = prefix + "_" + UUID.randomUUID() + extension;
             Path destination = rootLocation.resolve(filename);
             Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-
             return filename;
         } catch (IOException e) {
             throw new RuntimeException("Erreur lors de la sauvegarde du fichier: " + e.getMessage());
@@ -126,7 +126,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
     @Override
     public Soutenance updateSoutenance(Long id, Soutenance soutenance) {
-        log.info("Updating soutenance with id: {}", id);
         return soutenanceRepository.findById(id)
                 .map(existing -> {
                     existing.setTitreThese(soutenance.getTitreThese());
@@ -139,7 +138,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
     @Override
     public void deleteSoutenance(Long id) {
-        log.info("Deleting soutenance with id: {}", id);
         soutenanceRepository.deleteById(id);
     }
 
@@ -179,214 +177,190 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     }
 
     // ========================================================
-    // ✅ NOUVELLES MÉTHODES WORKFLOW DIRECTEUR
+    // ÉTAPE 1: DIRECTEUR - Valide les prérequis
+    // SOUMIS → PREREQUIS_VALIDES
     // ========================================================
 
-    /**
-     * ✅ Directeur valide les prérequis d'une soutenance
-     * Change le statut de SOUMIS → PREREQUIS_VALIDES
-     */
     @Override
     public Soutenance validerPrerequisDirecteur(Long soutenanceId, String commentaire) {
         log.info("✅ Validation prérequis par directeur pour soutenance: {}", soutenanceId);
 
         return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
-                    // Vérifier le statut actuel
                     if (soutenance.getStatut() != StatutSoutenance.SOUMIS) {
-                        throw new RuntimeException("Cette soutenance n'est pas en attente de validation. Statut actuel: " + soutenance.getStatut());
+                        throw new RuntimeException("Statut invalide. Attendu: SOUMIS, Actuel: " + soutenance.getStatut());
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
-
-                    // Mettre à jour le statut
                     soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
-
-                    // Enregistrer le commentaire du directeur si fourni
-                    if (commentaire != null && !commentaire.trim().isEmpty()) {
-                        soutenance.setCommentaireDirecteur(commentaire.trim());
-                    }
+                    if (commentaire != null) soutenance.setCommentaireDirecteur(commentaire.trim());
 
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    // Publier l'événement Kafka
-                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES",
-                            commentaire != null ? commentaire : "Prérequis validés par le directeur");
-
-                    log.info("✅ Prérequis validés pour soutenance {} par le directeur", soutenanceId);
-
+                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES", commentaire);
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
-    /**
-     * ✅ Directeur demande des corrections (rejet temporaire)
-     * Change le statut → REJETEE avec commentaire dans commentaire_directeur
-     */
     @Override
     public Soutenance rejeterParDirecteur(Long soutenanceId, String commentaire) {
-        log.info("❌ Rejet par directeur pour soutenance: {} - Motif: {}", soutenanceId, commentaire);
+        log.info("❌ Rejet par directeur pour soutenance: {}", soutenanceId);
 
         return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
-                    // Vérifier le statut actuel
                     if (soutenance.getStatut() != StatutSoutenance.SOUMIS) {
-                        throw new RuntimeException("Cette soutenance n'est pas en attente de validation. Statut actuel: " + soutenance.getStatut());
+                        throw new RuntimeException("Statut invalide. Attendu: SOUMIS");
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
-
-                    // Mettre à jour le statut
                     soutenance.setStatut(StatutSoutenance.REJETEE);
-
-                    // ✅ Enregistrer le commentaire du directeur (corrections demandées)
                     soutenance.setCommentaireDirecteur(commentaire);
 
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    // Publier l'événement Kafka
                     publishStatusChangedEvent(updated, ancienStatut, "REJETEE", commentaire);
-
-                    log.info("❌ Soutenance {} rejetée par le directeur. Motif: {}", soutenanceId, commentaire);
-
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
     // ========================================================
-    // MÉTHODES EXISTANTES
+    // ÉTAPE 2: DIRECTEUR - Propose le jury
+    // PREREQUIS_VALIDES → JURY_PROPOSE
     // ========================================================
-
-    @Override
-    public Soutenance verifierPrerequisEtSoumettre(Long id) {
-        log.info("Verifying prerequis for soutenance: {}", id);
-
-        return soutenanceRepository.findById(id)
-                .map(soutenance -> {
-                    // ✅ CORRECTION: Vérifier si prerequisSontValides est null
-                    if (soutenance.getPrerequis() != null && !soutenance.prerequisSontValides()) {
-                        throw new RuntimeException("Les prérequis ne sont pas remplis.");
-                    }
-
-                    String ancienStatut = soutenance.getStatut().name();
-
-                    if (soutenance.getPrerequis() != null) {
-                        soutenance.getPrerequis().setPrerequisValides(true);
-                    }
-                    soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
-                    Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES", "Prérequis validés");
-
-                    return updated;
-                })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
-    }
 
     @Override
     public Soutenance ajouterMembreJury(Long soutenanceId, MembreJury membreJury) {
-        log.info("Adding jury member to soutenance: {}", soutenanceId);
-
         return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
                     membreJury.setSoutenance(soutenance);
                     soutenance.getMembresJury().add(membreJury);
                     return soutenanceRepository.save(soutenance);
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
     @Override
-    public Soutenance proposerJury(Long id) {
-        log.info("Proposing jury for soutenance: {}", id);
+    public Soutenance supprimerMembreJury(Long soutenanceId, Long membreId) {
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    soutenance.getMembresJury().removeIf(m -> m.getId().equals(membreId));
+                    membreJuryRepository.deleteById(membreId);
+                    return soutenanceRepository.save(soutenance);
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
+    }
 
-        return soutenanceRepository.findById(id)
+    @Override
+    public Soutenance proposerJury(Long soutenanceId) {
+        log.info("📋 Proposition jury pour soutenance: {}", soutenanceId);
+
+        return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
                     if (soutenance.getStatut() != StatutSoutenance.PREREQUIS_VALIDES) {
-                        throw new RuntimeException("Les prérequis doivent être validés avant de proposer le jury");
+                        throw new RuntimeException("Statut invalide. Attendu: PREREQUIS_VALIDES");
                     }
 
-                    if (!soutenance.juryEstComplet()) {
-                        throw new RuntimeException("Le jury doit contenir au moins 1 président et 2 rapporteurs");
+                    // Vérifier que le jury est complet (minimum)
+                    if (soutenance.getMembresJury().size() < 3) {
+                        throw new RuntimeException("Le jury doit contenir au moins 3 membres");
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
                     soutenance.setStatut(StatutSoutenance.JURY_PROPOSE);
+
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    publishStatusChangedEvent(updated, ancienStatut, "JURY_PROPOSE", "Jury proposé");
-
-                    try {
-                        List<MembreJury> membresJury = membreJuryRepository.findBySoutenanceId(id);
-                        String doctorantNom = getDoctorantNom(updated.getDoctorantId());
-                        eventPublisher.publishAllJuryInvitations(updated, doctorantNom, membresJury);
-                        log.info("✅ Invitations jury envoyées pour {} membres", membresJury.size());
-                    } catch (Exception e) {
-                        log.warn("⚠️ Impossible d'envoyer les invitations jury: {}", e.getMessage());
-                    }
-
+                    publishStatusChangedEvent(updated, ancienStatut, "JURY_PROPOSE", "Jury proposé par le directeur");
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
+    // ========================================================
+    // ÉTAPE 3: ADMIN - Valide ou refuse le jury
+    // JURY_PROPOSE → AUTORISEE ou → PREREQUIS_VALIDES
+    // ========================================================
+
     @Override
-    public Soutenance soumettreRapportRapporteur(Long soutenanceId, Long membreJuryId, Boolean avisFavorable, String commentaire) {
-        log.info("Submitting rapport for rapporteur {} in soutenance {}", membreJuryId, soutenanceId);
-
-        MembreJury membre = membreJuryRepository.findById(membreJuryId)
-                .orElseThrow(() -> new RuntimeException("Membre jury non trouvé avec l'id: " + membreJuryId));
-
-        membre.setRapportSoumis(true);
-        membre.setAvisFavorable(avisFavorable);
-        membre.setCommentaireRapport(commentaire);
-        membreJuryRepository.save(membre);
+    public Soutenance validerJury(Long soutenanceId, String commentaire) {
+        log.info("✅ Validation jury par admin pour soutenance: {}", soutenanceId);
 
         return soutenanceRepository.findById(soutenanceId)
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + soutenanceId));
-    }
-
-    @Override
-    public Soutenance autoriserSoutenance(Long id, String commentaire) {
-        log.info("Authorizing soutenance: {}", id);
-
-        return soutenanceRepository.findById(id)
                 .map(soutenance -> {
                     if (soutenance.getStatut() != StatutSoutenance.JURY_PROPOSE) {
-                        throw new RuntimeException("Le jury doit être proposé avant l'autorisation");
-                    }
-
-                    if (!soutenance.tousLesRapportsRecus()) {
-                        throw new RuntimeException("Tous les rapports des rapporteurs doivent être soumis");
-                    }
-
-                    if (!soutenance.tousLesRapportsFavorables()) {
-                        throw new RuntimeException("Tous les rapporteurs doivent donner un avis favorable");
+                        throw new RuntimeException("Statut invalide. Attendu: JURY_PROPOSE");
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
                     soutenance.setStatut(StatutSoutenance.AUTORISEE);
-                    soutenance.setCommentaireAdmin(commentaire);
                     soutenance.setDateAutorisation(LocalDateTime.now());
+                    if (commentaire != null) soutenance.setCommentaireAdmin(commentaire);
+
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    publishStatusChangedEvent(updated, ancienStatut, "AUTORISEE", commentaire);
-
+                    publishStatusChangedEvent(updated, ancienStatut, "AUTORISEE", "Jury validé par l'administration");
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
     @Override
-    public Soutenance planifierSoutenance(Long id, LocalDate date, LocalTime heure, String lieu) {
-        log.info("Planning soutenance: {}", id);
+    public Soutenance refuserJury(Long soutenanceId, String commentaire) {
+        log.info("❌ Refus jury par admin pour soutenance: {}", soutenanceId);
 
-        return soutenanceRepository.findById(id)
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    if (soutenance.getStatut() != StatutSoutenance.JURY_PROPOSE) {
+                        throw new RuntimeException("Statut invalide. Attendu: JURY_PROPOSE");
+                    }
+
+                    String ancienStatut = soutenance.getStatut().name();
+                    // Retour à PREREQUIS_VALIDES pour que le directeur modifie le jury
+                    soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
+                    soutenance.setCommentaireAdmin(commentaire);
+
+                    Soutenance updated = soutenanceRepository.save(soutenance);
+                    publishStatusChangedEvent(updated, ancienStatut, "PREREQUIS_VALIDES", "Jury refusé: " + commentaire);
+                    return updated;
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
+    }
+
+    // ========================================================
+    // ÉTAPE 4: DIRECTEUR - Propose une date
+    // ========================================================
+
+    @Override
+    public Soutenance proposerDateSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu) {
+        log.info("📅 Proposition date soutenance: {} - Date: {}", soutenanceId, date);
+
+        return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
                     if (soutenance.getStatut() != StatutSoutenance.AUTORISEE) {
-                        throw new RuntimeException("La soutenance doit être autorisée avant la planification");
+                        throw new RuntimeException("Statut invalide. Attendu: AUTORISEE");
+                    }
+
+                    soutenance.setDateSoutenance(date);
+                    soutenance.setHeureSoutenance(heure);
+                    soutenance.setLieuSoutenance(lieu);
+                    // Le statut reste AUTORISEE, l'admin doit confirmer
+
+                    return soutenanceRepository.save(soutenance);
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
+    }
+
+    // ========================================================
+    // ÉTAPE 5: ADMIN - Planifie la soutenance
+    // AUTORISEE → PLANIFIEE
+    // ========================================================
+
+    @Override
+    public Soutenance planifierSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu) {
+        log.info("📅 Planification soutenance: {} - Date: {}", soutenanceId, date);
+
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    if (soutenance.getStatut() != StatutSoutenance.AUTORISEE) {
+                        throw new RuntimeException("Statut invalide. Attendu: AUTORISEE");
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
@@ -394,6 +368,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setHeureSoutenance(heure);
                     soutenance.setLieuSoutenance(lieu);
                     soutenance.setStatut(StatutSoutenance.PLANIFIEE);
+
                     Soutenance updated = soutenanceRepository.save(soutenance);
 
                     try {
@@ -402,20 +377,41 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                         event.setDateSoutenance(LocalDateTime.of(date, heure));
                         event.setLieu(lieu);
                         eventPublisher.publishSoutenanceScheduled(event);
-                        log.info("✅ Événement SoutenanceScheduled publié");
                     } catch (Exception e) {
                         log.warn("⚠️ Impossible de publier l'événement: {}", e.getMessage());
                     }
 
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
     }
 
     @Override
-    public Soutenance enregistrerResultat(Long id, Double note, String mention, Boolean felicitations) {
-        log.info("Recording result for soutenance: {}", id);
+    public Soutenance refuserPlanification(Long soutenanceId, String commentaire) {
+        log.info("❌ Refus planification pour soutenance: {}", soutenanceId);
 
+        return soutenanceRepository.findById(soutenanceId)
+                .map(soutenance -> {
+                    String ancienStatut = soutenance.getStatut().name();
+                    // Retour à AUTORISEE pour que le directeur propose une autre date
+                    soutenance.setStatut(StatutSoutenance.AUTORISEE);
+                    soutenance.setCommentaireAdmin(commentaire);
+                    soutenance.setDateSoutenance(null);
+                    soutenance.setHeureSoutenance(null);
+
+                    Soutenance updated = soutenanceRepository.save(soutenance);
+                    publishStatusChangedEvent(updated, ancienStatut, "AUTORISEE", "Date refusée: " + commentaire);
+                    return updated;
+                })
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
+    }
+
+    // ========================================================
+    // ÉTAPE 6: RÉSULTAT
+    // ========================================================
+
+    @Override
+    public Soutenance enregistrerResultat(Long id, Double note, String mention, Boolean felicitations) {
         return soutenanceRepository.findById(id)
                 .map(soutenance -> {
                     String ancienStatut = soutenance.getStatut().name();
@@ -423,35 +419,56 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setMention(mention);
                     soutenance.setFelicitationsJury(felicitations);
                     soutenance.setStatut(StatutSoutenance.TERMINEE);
+
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
-                    String commentaire = "Soutenance terminée - Mention: " + mention;
-                    if (felicitations) {
-                        commentaire += " avec félicitations du jury";
-                    }
-                    publishStatusChangedEvent(updated, ancienStatut, "TERMINEE", commentaire);
-
+                    publishStatusChangedEvent(updated, ancienStatut, "TERMINEE", "Soutenance terminée - Mention: " + mention);
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + id));
     }
+
+    // ========================================================
+    // AUTRES MÉTHODES
+    // ========================================================
 
     @Override
     public Soutenance rejeterSoutenance(Long id, String motif) {
-        log.info("Rejecting soutenance: {}", id);
-
         return soutenanceRepository.findById(id)
                 .map(soutenance -> {
                     String ancienStatut = soutenance.getStatut().name();
                     soutenance.setStatut(StatutSoutenance.REJETEE);
                     soutenance.setCommentaireAdmin(motif);
                     Soutenance updated = soutenanceRepository.save(soutenance);
-
                     publishStatusChangedEvent(updated, ancienStatut, "REJETEE", motif);
-
                     return updated;
                 })
-                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée avec l'id: " + id));
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + id));
+    }
+
+    @Override
+    public Soutenance soumettreRapportRapporteur(Long soutenanceId, Long membreJuryId, Boolean avisFavorable, String commentaire) {
+        MembreJury membre = membreJuryRepository.findById(membreJuryId)
+                .orElseThrow(() -> new RuntimeException("Membre jury non trouvé: " + membreJuryId));
+
+        membre.setRapportSoumis(true);
+        membre.setAvisFavorable(avisFavorable);
+        membre.setCommentaireRapport(commentaire);
+        membreJuryRepository.save(membre);
+
+        return soutenanceRepository.findById(soutenanceId)
+                .orElseThrow(() -> new RuntimeException("Soutenance non trouvée: " + soutenanceId));
+    }
+
+    @Override
+    public Soutenance verifierPrerequisEtSoumettre(Long id) {
+        // Legacy - redirige vers validerPrerequisDirecteur
+        return validerPrerequisDirecteur(id, "Prérequis validés");
+    }
+
+    @Override
+    public Soutenance autoriserSoutenance(Long id, String commentaire) {
+        // Legacy - redirige vers validerJury
+        return validerJury(id, commentaire);
     }
 
     // ========================================================
@@ -462,7 +479,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         try {
             SoutenanceStatusChangedEvent event = buildStatusChangedEvent(soutenance, oldStatus, newStatus, commentaire);
             eventPublisher.publishSoutenanceStatusChanged(event);
-            log.info("✅ Événement SoutenanceStatusChanged publié: {} -> {}", oldStatus, newStatus);
         } catch (Exception e) {
             log.warn("⚠️ Impossible de publier l'événement Kafka: {}", e.getMessage());
         }
@@ -474,7 +490,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         try {
             doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
         } catch (Exception e) {
-            log.warn("Impossible de récupérer les infos du doctorant: {}", e.getMessage());
+            log.warn("Impossible de récupérer les infos du doctorant");
         }
 
         return SoutenanceStatusChangedEvent.builder()
@@ -493,15 +509,9 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                 .build();
     }
 
-    private String getDoctorantNom(Long doctorantId) {
-        try {
-            UserDTO doctorant = userServiceClient.getUserById(doctorantId);
-            return doctorant.getNom() + " " + doctorant.getPrenom();
-        } catch (Exception e) {
-            return "Doctorant ID: " + doctorantId;
-        }
-    }
-
+    /**
+     * ✅ IMPORTANT: Enrichir avec TOUTES les infos du doctorant (y compris prérequis)
+     */
     private Soutenance enrichirAvecInfosUtilisateurs(Soutenance soutenance) {
         try {
             UserDTO doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());
@@ -510,9 +520,9 @@ public class SoutenanceServiceImpl implements SoutenanceService {
             soutenance.setDoctorantInfo(doctorant);
             soutenance.setDirecteurInfo(directeur);
 
-            log.info("Infos enrichies - Doctorant: {} {}, Directeur: {} {}",
-                    doctorant.getNom(), doctorant.getPrenom(),
-                    directeur.getNom(), directeur.getPrenom());
+            log.debug("Infos enrichies - Doctorant: {} {} (Pubs: {}, Conf: {}, Formation: {}h)",
+                    doctorant.getPrenom(), doctorant.getNom(),
+                    doctorant.getNbPublications(), doctorant.getNbConferences(), doctorant.getHeuresFormation());
 
         } catch (Exception e) {
             log.warn("Impossible de récupérer les infos utilisateurs pour la soutenance {}: {}",

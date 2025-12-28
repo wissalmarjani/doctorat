@@ -1,8 +1,10 @@
 package ma.enset.soutenanceservice.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // ✅ IMPORTANT
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+// On retire NotNull pour directeurId car il peut être vide au début
+// import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,31 +29,26 @@ public class Soutenance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Référence au doctorant (User Service)
-    @NotNull(message = "L'ID du doctorant est obligatoire")
     @Column(name = "doctorant_id", nullable = false)
     private Long doctorantId;
 
-    // Référence au directeur de thèse (User Service)
-    @NotNull(message = "L'ID du directeur est obligatoire")
-    @Column(name = "directeur_id", nullable = false)
+    // ✅ CORRECTION : On autorise le NULL ici pour la soumission initiale
+    @Column(name = "directeur_id")
     private Long directeurId;
 
     // =======================================================
-    // ✅ Champs NON persistés (utilisés uniquement pour le JSON)
+    // Champs NON persistés
     // =======================================================
     @Transient
     private UserDTO doctorantInfo;
 
     @Transient
     private UserDTO directeurInfo;
-    // =======================================================
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatutSoutenance statut = StatutSoutenance.BROUILLON;
 
-    // Informations sur la thèse
     @NotBlank(message = "Le titre de la thèse est obligatoire")
     @Column(name = "titre_these", nullable = false, length = 500)
     private String titreThese;
@@ -62,11 +59,9 @@ public class Soutenance {
     @Column(name = "mots_cles", length = 500)
     private String motsCles;
 
-    // Prérequis
     @Embedded
     private Prerequis prerequis = new Prerequis();
 
-    // Documents
     @Column(name = "chemin_manuscrit")
     private String cheminManuscrit;
 
@@ -79,11 +74,11 @@ public class Soutenance {
     @Column(name = "chemin_autorisation")
     private String cheminAutorisation;
 
-    // Jury
+    // ✅ CORRECTION : Protection supplémentaire contre la boucle JSON
     @OneToMany(mappedBy = "soutenance", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("soutenance")
     private List<MembreJury> membresJury = new ArrayList<>();
 
-    // Planification
     @Column(name = "date_soutenance")
     private LocalDate dateSoutenance;
 
@@ -93,17 +88,15 @@ public class Soutenance {
     @Column(name = "lieu_soutenance")
     private String lieuSoutenance;
 
-    // Résultat
     @Column(name = "note_finale")
     private Double noteFinale;
 
     @Column(name = "mention")
-    private String mention; // Très Honorable, Honorable, etc.
+    private String mention;
 
     @Column(name = "felicitations_jury")
     private Boolean felicitationsJury = false;
 
-    // Commentaires et validations
     @Column(name = "commentaire_directeur", length = 2000)
     private String commentaireDirecteur;
 
@@ -130,47 +123,25 @@ public class Soutenance {
         updatedAt = LocalDateTime.now();
     }
 
-    // =======================
     // Méthodes utilitaires
-    // =======================
-
     public boolean prerequisSontValides() {
         return prerequis != null && prerequis.verifierPrerequisMinimaux();
     }
 
     public boolean juryEstComplet() {
-        if (membresJury == null || membresJury.isEmpty()) {
-            return false;
-        }
-
-        long nbPresidents = membresJury.stream()
-                .filter(m -> m.getRole() == RoleJury.PRESIDENT)
-                .count();
-
-        long nbRapporteurs = membresJury.stream()
-                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
-                .count();
-
+        if (membresJury == null || membresJury.isEmpty()) return false;
+        long nbPresidents = membresJury.stream().filter(m -> m.getRole() == RoleJury.PRESIDENT).count();
+        long nbRapporteurs = membresJury.stream().filter(m -> m.getRole() == RoleJury.RAPPORTEUR).count();
         return nbPresidents >= 1 && nbRapporteurs >= 2;
     }
 
     public boolean tousLesRapportsRecus() {
-        if (membresJury == null || membresJury.isEmpty()) {
-            return false;
-        }
-
-        return membresJury.stream()
-                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
-                .allMatch(m -> Boolean.TRUE.equals(m.getRapportSoumis()));
+        if (membresJury == null || membresJury.isEmpty()) return false;
+        return membresJury.stream().filter(m -> m.getRole() == RoleJury.RAPPORTEUR).allMatch(m -> Boolean.TRUE.equals(m.getRapportSoumis()));
     }
 
     public boolean tousLesRapportsFavorables() {
-        if (membresJury == null || membresJury.isEmpty()) {
-            return false;
-        }
-
-        return membresJury.stream()
-                .filter(m -> m.getRole() == RoleJury.RAPPORTEUR)
-                .allMatch(m -> Boolean.TRUE.equals(m.getAvisFavorable()));
+        if (membresJury == null || membresJury.isEmpty()) return false;
+        return membresJury.stream().filter(m -> m.getRole() == RoleJury.RAPPORTEUR).allMatch(m -> Boolean.TRUE.equals(m.getAvisFavorable()));
     }
 }

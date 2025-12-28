@@ -62,6 +62,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/test").permitAll()
 
                         // ============================================================
+                        // ✅ INTER-SERVICES: Endpoints DTO accessibles sans auth
+                        // Ces endpoints sont appelés par d'autres microservices via OpenFeign
+                        // ============================================================
+                        .requestMatchers(HttpMethod.GET, "/api/users/*/dto").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/username/*/dto").permitAll()
+
+                        // ✅ Permettre aussi l'accès GET par ID pour les services internes
+                        .requestMatchers(HttpMethod.GET, "/api/users/*").permitAll()
+
+                        // ============================================================
                         // 🔓 TEMPORAIRE: Autoriser POST /api/users sans auth (pour créer directeurs)
                         // ⚠️ À SÉCURISER EN PRODUCTION !
                         // ============================================================
@@ -80,8 +90,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/users/*/refuse-directeur")
                         .hasAnyRole("ADMIN", "DIRECTEUR_THESE")
 
-                        // ================== ADMIN - Autres routes users ==================
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        // ================== ADMIN - Autres routes users (PUT, DELETE) ==================
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
 
                         // ================== RESTE ==================
                         .anyRequest().authenticated()
@@ -93,7 +104,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         log.info("🔐 Security Filter Chain configured successfully");
-        log.info("🔓 NOTE: POST /api/users is temporarily PUBLIC for testing");
+        log.info("🔓 Inter-service endpoints (/api/users/*/dto) are PUBLIC");
         return http.build();
     }
 

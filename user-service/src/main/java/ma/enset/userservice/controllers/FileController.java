@@ -12,24 +12,25 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @RestController
-@RequestMapping("/api/files")
-@CrossOrigin(origins = "*") // Important pour éviter les erreurs CORS si le port change
+// ✅ CORRECTION IMPORTANTE : On le place sous /api/users
+@RequestMapping("/api/users/files")
+@CrossOrigin(origins = "*")
 public class FileController {
 
-    // On utilise un chemin relatif pour que ça marche partout (pas seulement sur le PC de HP)
-    // Cela doit correspondre au dossier utilisé dans AuthService
     private final Path rootLocation = Paths.get("uploads");
 
     @GetMapping("/{filename:.+}")
-    // ❌ J'ai retiré @PreAuthorize("hasRole('ADMIN')") car le navigateur n'envoie pas le token dans un nouvel onglet
     public ResponseEntity<Resource> getFile(@PathVariable String filename) {
         try {
             Path file = rootLocation.resolve(filename).normalize();
             Resource resource = new UrlResource(file.toUri());
 
             if (resource.exists() || resource.isReadable()) {
-                // Détermine le type de contenu (PDF)
-                String contentType = "application/pdf";
+                // Détection simple du type mime
+                String contentType = "application/octet-stream";
+                if(filename.endsWith(".pdf")) contentType = "application/pdf";
+                else if(filename.endsWith(".jpg") || filename.endsWith(".jpeg")) contentType = "image/jpeg";
+                else if(filename.endsWith(".png")) contentType = "image/png";
 
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))

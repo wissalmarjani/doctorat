@@ -26,10 +26,6 @@ export class SoutenanceService {
         return this.http.get<any>(`${this.baseUrl}/${id}`);
     }
 
-    // =====================================================
-    // PAR UTILISATEUR
-    // =====================================================
-
     getSoutenanceByDoctorantId(doctorantId: number): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/doctorant/${doctorantId}`);
     }
@@ -44,47 +40,32 @@ export class SoutenanceService {
 
     soumettreDemande(data: any, files: { manuscrit: File; rapport: File }): Observable<any> {
         const formData = new FormData();
-        formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
-        if (files.manuscrit) {
-            formData.append('manuscrit', files.manuscrit);
-        }
-        if (files.rapport) {
-            formData.append('rapport', files.rapport);
-        }
+        formData.append('titre', data.titre);
+        formData.append('doctorantId', data.doctorantId.toString());
+        formData.append('directeurId', data.directeurId?.toString() || '');
+        formData.append('manuscrit', files.manuscrit);
+        formData.append('rapportAntiPlagiat', files.rapport);
         return this.http.post<any>(`${this.baseUrl}/soumettre`, formData);
     }
 
-    soumettreDemandeSimple(data: any): Observable<any> {
-        return this.http.post<any>(`${this.baseUrl}/soumettre-simple`, data);
-    }
-
     // =====================================================
-    // WORKFLOW DIRECTEUR
+    // ÉTAPE 1: DIRECTEUR - Valide les prérequis
+    // SOUMIS → PREREQUIS_VALIDES
     // =====================================================
 
-    /**
-     * ✅ Directeur valide les prérequis d'une soutenance
-     * Endpoint: PUT /soutenances/{id}/valider-prerequis
-     */
     validerPrerequisDirecteur(soutenanceId: number, commentaire?: string): Observable<any> {
-        console.log('📤 validerPrerequisDirecteur - ID:', soutenanceId);
         return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/valider-prerequis`, {
             commentaire: commentaire || 'Prérequis validés par le directeur'
         });
     }
 
-    /**
-     * ✅ Directeur demande des corrections (rejet temporaire)
-     * Endpoint: PUT /soutenances/{id}/rejeter-directeur
-     */
     rejeterDemandeDirecteur(soutenanceId: number, commentaire: string): Observable<any> {
-        console.log('📤 rejeterDemandeDirecteur - ID:', soutenanceId, 'Commentaire:', commentaire);
         return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/rejeter-directeur`, {
             commentaire: commentaire
         });
     }
 
-    // Alias pour compatibilité avec l'ancien code
+    // Alias pour compatibilité
     validerPrerequis(soutenanceId: number): Observable<any> {
         return this.validerPrerequisDirecteur(soutenanceId);
     }
@@ -94,32 +75,8 @@ export class SoutenanceService {
     }
 
     // =====================================================
-    // WORKFLOW ADMIN
-    // =====================================================
-
-    planifierSoutenance(soutenanceId: number, data: {
-        dateSoutenance: string;
-        heureSoutenance?: string;
-        lieuSoutenance?: string;
-    }): Observable<any> {
-        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/planifier`, data);
-    }
-
-    autoriserSoutenance(soutenanceId: number): Observable<any> {
-        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/autoriser`, {});
-    }
-
-    enregistrerResultat(soutenanceId: number, data: {
-        mention?: string;
-        noteFinale?: number;
-        felicitationsJury?: boolean;
-        commentaire?: string;
-    }): Observable<any> {
-        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/resultat`, data);
-    }
-
-    // =====================================================
-    // JURY
+    // ÉTAPE 2: DIRECTEUR - Gestion du Jury
+    // PREREQUIS_VALIDES → JURY_PROPOSE
     // =====================================================
 
     ajouterMembreJury(soutenanceId: number, membre: any): Observable<any> {
@@ -134,20 +91,129 @@ export class SoutenanceService {
         return this.http.delete<any>(`${this.baseUrl}/${soutenanceId}/jury/${membreId}`);
     }
 
-    // =====================================================
-    // DOCUMENTS
-    // =====================================================
-
-    getDocumentUrl(filename: string): string {
-        if (!filename) return '';
-        if (filename.startsWith('http')) return filename;
-        return `${environment.soutenanceServiceUrl}/files/${filename}`;
+    proposerJury(soutenanceId: number): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/proposer-jury`, {});
     }
 
-    downloadDocument(filename: string): Observable<Blob> {
-        return this.http.get(`${environment.soutenanceServiceUrl}/files/${filename}`, {
-            responseType: 'blob'
+    // =====================================================
+    // ÉTAPE 3: ADMIN - Valide ou refuse le jury
+    // JURY_PROPOSE → AUTORISEE
+    // =====================================================
+
+    validerJury(soutenanceId: number, commentaire?: string): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/valider-jury`, {
+            commentaire: commentaire
         });
+    }
+
+    refuserJury(soutenanceId: number, commentaire: string): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/refuser-jury`, {
+            commentaire: commentaire
+        });
+    }
+
+    // =====================================================
+    // ÉTAPE 4: DIRECTEUR - Propose date de soutenance
+    // =====================================================
+
+    proposerDateSoutenance(soutenanceId: number, data: {
+        dateSoutenance: string;
+        heureSoutenance?: string;
+        lieuSoutenance?: string;
+    }): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/proposer-date`, data);
+    }
+
+    // =====================================================
+    // ÉTAPE 5: ADMIN - Planifie la soutenance
+    // AUTORISEE → PLANIFIEE
+    // =====================================================
+
+    planifierSoutenance(soutenanceId: number, data: {
+        dateSoutenance: string;
+        heureSoutenance?: string;
+        lieuSoutenance?: string;
+    }): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/planifier`, data);
+    }
+
+    refuserPlanification(soutenanceId: number, commentaire: string): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/refuser-planification`, {
+            commentaire: commentaire
+        });
+    }
+
+    // =====================================================
+    // ÉTAPE 6: RÉSULTAT
+    // PLANIFIEE → TERMINEE
+    // =====================================================
+
+    enregistrerResultat(soutenanceId: number, data: {
+        note?: number;
+        mention?: string;
+        felicitations?: boolean;
+    }): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/resultat`, data);
+    }
+
+    // =====================================================
+    // AUTRES
+    // =====================================================
+
+    rejeterSoutenance(soutenanceId: number, motif: string): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/rejeter`, { motif });
+    }
+
+    autoriserSoutenance(soutenanceId: number): Observable<any> {
+        return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/autoriser`, {});
+    }
+
+    // =====================================================
+    // DOCUMENTS - URL CORRIGÉE
+    // =====================================================
+
+    /**
+     * Obtenir l'URL pour afficher/télécharger un document
+     * Le backend stocke: "uploads/soutenances/manuscrit_xxx.pdf"
+     * L'URL doit être: /api/soutenances/files/manuscrit_xxx.pdf
+     */
+    getDocumentUrl(filepath: string): string {
+        if (!filepath) return '';
+
+        // Si c'est déjà une URL complète, la retourner
+        if (filepath.startsWith('http')) return filepath;
+
+        // Extraire juste le nom du fichier du chemin complet
+        let filename = filepath;
+
+        // Si le chemin contient "uploads/soutenances/", extraire le nom du fichier
+        if (filepath.includes('uploads/soutenances/')) {
+            filename = filepath.substring(filepath.lastIndexOf('uploads/soutenances/') + 'uploads/soutenances/'.length);
+        } else if (filepath.includes('/')) {
+            // Sinon prendre le dernier segment
+            filename = filepath.substring(filepath.lastIndexOf('/') + 1);
+        } else if (filepath.includes('\\')) {
+            filename = filepath.substring(filepath.lastIndexOf('\\') + 1);
+        }
+
+        // Construire l'URL vers le FileController
+        return `${this.baseUrl}/files/${encodeURIComponent(filename)}`;
+    }
+
+    /**
+     * Télécharger un document en tant que Blob
+     */
+    downloadDocument(filepath: string): Observable<Blob> {
+        const url = this.getDocumentUrl(filepath);
+        return this.http.get(url, { responseType: 'blob' });
+    }
+
+    /**
+     * Ouvrir un document dans un nouvel onglet
+     */
+    openDocument(filepath: string): void {
+        const url = this.getDocumentUrl(filepath);
+        window.open(url, '_blank');
     }
 
     // =====================================================
@@ -156,9 +222,5 @@ export class SoutenanceService {
 
     getStatistiques(): Observable<any> {
         return this.http.get<any>(`${this.baseUrl}/statistiques`);
-    }
-
-    getStatistiquesByDirecteur(directeurId: number): Observable<any> {
-        return this.http.get<any>(`${this.baseUrl}/statistiques/directeur/${directeurId}`);
     }
 }

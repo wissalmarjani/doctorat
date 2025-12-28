@@ -37,51 +37,59 @@ public interface SoutenanceService {
     List<Soutenance> getSoutenancesByStatut(StatutSoutenance statut);
 
     // ========================================================
-    // ✅ WORKFLOW DIRECTEUR - NOUVELLES MÉTHODES
+    // ÉTAPE 1: DIRECTEUR - Valide les prérequis
+    // SOUMIS → PREREQUIS_VALIDES
     // ========================================================
 
-    /**
-     * Directeur valide les prérequis d'une soutenance
-     * Change le statut de SOUMIS → PREREQUIS_VALIDES
-     *
-     * @param soutenanceId ID de la soutenance
-     * @param commentaire Commentaire optionnel du directeur
-     * @return La soutenance mise à jour
-     */
     Soutenance validerPrerequisDirecteur(Long soutenanceId, String commentaire);
-
-    /**
-     * Directeur demande des corrections (rejet temporaire)
-     * Change le statut → REJETEE avec commentaire dans commentaire_directeur
-     *
-     * @param soutenanceId ID de la soutenance
-     * @param commentaire Motif du rejet / corrections demandées (obligatoire)
-     * @return La soutenance mise à jour
-     */
     Soutenance rejeterParDirecteur(Long soutenanceId, String commentaire);
 
     // ========================================================
-    // WORKFLOW EXISTANT
+    // ÉTAPE 2: DIRECTEUR - Propose le jury
+    // PREREQUIS_VALIDES → JURY_PROPOSE
     // ========================================================
 
-    /**
-     * @deprecated Utiliser validerPrerequisDirecteur() à la place
-     * Vérifie automatiquement les prérequis depuis l'objet soutenance.prerequis
-     */
-    Soutenance verifierPrerequisEtSoumettre(Long id);
-
     Soutenance ajouterMembreJury(Long soutenanceId, MembreJury membreJury);
+    Soutenance supprimerMembreJury(Long soutenanceId, Long membreId);
+    Soutenance proposerJury(Long soutenanceId);
 
-    Soutenance proposerJury(Long id);
+    // ========================================================
+    // ÉTAPE 3: ADMIN - Valide ou refuse le jury
+    // JURY_PROPOSE → AUTORISEE ou → PREREQUIS_VALIDES (retour)
+    // ========================================================
 
-    Soutenance soumettreRapportRapporteur(Long soutenanceId, Long membreJuryId,
-                                          Boolean avisFavorable, String commentaire);
+    Soutenance validerJury(Long soutenanceId, String commentaire);
+    Soutenance refuserJury(Long soutenanceId, String commentaire);
 
-    Soutenance autoriserSoutenance(Long id, String commentaire);
+    // ========================================================
+    // ÉTAPE 4: DIRECTEUR - Propose date de soutenance
+    // ========================================================
 
-    Soutenance planifierSoutenance(Long id, LocalDate date, LocalTime heure, String lieu);
+    Soutenance proposerDateSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu);
+
+    // ========================================================
+    // ÉTAPE 5: ADMIN - Planifie la soutenance
+    // AUTORISEE → PLANIFIEE
+    // ========================================================
+
+    Soutenance planifierSoutenance(Long soutenanceId, LocalDate date, LocalTime heure, String lieu);
+    Soutenance refuserPlanification(Long soutenanceId, String commentaire);
+
+    // ========================================================
+    // ÉTAPE 6: RÉSULTAT
+    // PLANIFIEE → TERMINEE
+    // ========================================================
 
     Soutenance enregistrerResultat(Long id, Double note, String mention, Boolean felicitations);
 
+    // ========================================================
+    // AUTRES
+    // ========================================================
+
     Soutenance rejeterSoutenance(Long id, String motif);
+    Soutenance soumettreRapportRapporteur(Long soutenanceId, Long membreJuryId, Boolean avisFavorable, String commentaire);
+
+    // Legacy
+    Soutenance verifierPrerequisEtSoumettre(Long id);
+    Soutenance autoriserSoutenance(Long id, String commentaire);
 }

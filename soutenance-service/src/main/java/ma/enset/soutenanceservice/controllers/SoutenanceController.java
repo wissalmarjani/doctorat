@@ -7,7 +7,6 @@ import ma.enset.soutenanceservice.entities.MembreJury;
 import ma.enset.soutenanceservice.entities.Soutenance;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
 import ma.enset.soutenanceservice.services.SoutenanceService;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,42 +27,39 @@ public class SoutenanceController {
 
     private final SoutenanceService soutenanceService;
 
+    // ========================================================
+    // CRUD DE BASE
+    // ========================================================
+
     @PostMapping
     public ResponseEntity<Soutenance> createSoutenance(@Valid @RequestBody Soutenance soutenance) {
-        log.info("REST request to create soutenance for doctorant: {}", soutenance.getDoctorantId());
         Soutenance created = soutenanceService.createSoutenance(soutenance);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PostMapping(value = "/soumettre", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Soutenance> soumettreDemande(
+    public ResponseEntity<?> soumettreDemande(
             @RequestParam("titre") String titre,
             @RequestParam("doctorantId") Long doctorantId,
             @RequestParam("directeurId") Long directeurId,
             @RequestPart("manuscrit") MultipartFile manuscrit,
             @RequestPart("rapportAntiPlagiat") MultipartFile rapportAntiPlagiat,
-            @RequestPart(value = "autorisation", required = false) MultipartFile autorisation
-    ) {
-        log.info("REST request to submit soutenance request for doctorant: {}", doctorantId);
+            @RequestPart(value = "autorisation", required = false) MultipartFile autorisation) {
         try {
             Soutenance soumise = soutenanceService.soumettreDemande(titre, doctorantId, directeurId, manuscrit, rapportAntiPlagiat, autorisation);
             return ResponseEntity.status(HttpStatus.CREATED).body(soumise);
         } catch (RuntimeException e) {
-            log.error("Error submitting soutenance request: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     @GetMapping
     public ResponseEntity<List<Soutenance>> getAllSoutenances() {
-        log.info("REST request to get all soutenances");
-        List<Soutenance> soutenances = soutenanceService.getAllSoutenances();
-        return ResponseEntity.ok(soutenances);
+        return ResponseEntity.ok(soutenanceService.getAllSoutenances());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Soutenance> getSoutenanceById(@PathVariable Long id) {
-        log.info("REST request to get soutenance by id: {}", id);
         return soutenanceService.getSoutenanceById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -71,203 +67,221 @@ public class SoutenanceController {
 
     @GetMapping("/doctorant/{doctorantId}")
     public ResponseEntity<List<Soutenance>> getSoutenancesByDoctorant(@PathVariable Long doctorantId) {
-        log.info("REST request to get soutenances by doctorant: {}", doctorantId);
-        List<Soutenance> soutenances = soutenanceService.getSoutenancesByDoctorant(doctorantId);
-        return ResponseEntity.ok(soutenances);
+        return ResponseEntity.ok(soutenanceService.getSoutenancesByDoctorant(doctorantId));
     }
 
     @GetMapping("/directeur/{directeurId}")
     public ResponseEntity<List<Soutenance>> getSoutenancesByDirecteur(@PathVariable Long directeurId) {
-        log.info("REST request to get soutenances by directeur: {}", directeurId);
-        List<Soutenance> soutenances = soutenanceService.getSoutenancesByDirecteur(directeurId);
-        return ResponseEntity.ok(soutenances);
+        return ResponseEntity.ok(soutenanceService.getSoutenancesByDirecteur(directeurId));
     }
 
     @GetMapping("/statut/{statut}")
     public ResponseEntity<List<Soutenance>> getSoutenancesByStatut(@PathVariable StatutSoutenance statut) {
-        log.info("REST request to get soutenances by statut: {}", statut);
-        List<Soutenance> soutenances = soutenanceService.getSoutenancesByStatut(statut);
-        return ResponseEntity.ok(soutenances);
+        return ResponseEntity.ok(soutenanceService.getSoutenancesByStatut(statut));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Soutenance> updateSoutenance(@PathVariable Long id, @Valid @RequestBody Soutenance soutenance) {
-        log.info("REST request to update soutenance with id: {}", id);
         try {
-            Soutenance updated = soutenanceService.updateSoutenance(id, soutenance);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(soutenanceService.updateSoutenance(id, soutenance));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSoutenance(@PathVariable Long id) {
+        soutenanceService.deleteSoutenance(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ========================================================
-    // ✅ WORKFLOW DIRECTEUR - NOUVEAUX ENDPOINTS
+    // ÉTAPE 1: DIRECTEUR - Valide les prérequis (SOUMIS → PREREQUIS_VALIDES)
     // ========================================================
 
-    /**
-     * ✅ Directeur valide les prérequis d'une soutenance
-     * Change le statut de SOUMIS → PREREQUIS_VALIDES
-     * Endpoint: PUT /api/soutenances/{id}/valider-prerequis
-     */
     @PutMapping("/{id}/valider-prerequis")
-    public ResponseEntity<?> validerPrerequisDirecteur(
-            @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> payload) {
-        log.info("REST request to validate prerequis by directeur for soutenance: {}", id);
+    public ResponseEntity<?> validerPrerequisDirecteur(@PathVariable Long id, @RequestBody(required = false) Map<String, String> payload) {
         try {
             String commentaire = (payload != null) ? payload.get("commentaire") : null;
-            Soutenance validated = soutenanceService.validerPrerequisDirecteur(id, commentaire);
-            return ResponseEntity.ok(validated);
+            return ResponseEntity.ok(soutenanceService.validerPrerequisDirecteur(id, commentaire));
         } catch (RuntimeException e) {
-            log.error("Error validating prerequis: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    /**
-     * ✅ Directeur demande des corrections (rejet temporaire)
-     * Change le statut → REJETEE avec commentaire dans commentaire_directeur
-     * Endpoint: PUT /api/soutenances/{id}/rejeter-directeur
-     */
     @PutMapping("/{id}/rejeter-directeur")
-    public ResponseEntity<?> rejeterParDirecteur(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> payload) {
-        log.info("REST request to reject soutenance by directeur: {}", id);
+    public ResponseEntity<?> rejeterParDirecteur(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         try {
             String commentaire = payload.get("commentaire");
             if (commentaire == null || commentaire.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Le commentaire est obligatoire"));
             }
-            Soutenance rejected = soutenanceService.rejeterParDirecteur(id, commentaire.trim());
-            return ResponseEntity.ok(rejected);
+            return ResponseEntity.ok(soutenanceService.rejeterParDirecteur(id, commentaire.trim()));
         } catch (RuntimeException e) {
-            log.error("Error rejecting by directeur: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     // ========================================================
-    // ANCIEN ENDPOINT (garde pour compatibilité mais renommé)
-    // ========================================================
-
-    /**
-     * @deprecated Utiliser /valider-prerequis à la place
-     * Cet endpoint vérifie automatiquement les prérequis depuis l'objet soutenance
-     */
-    @PutMapping("/{id}/verifier-prerequis")
-    public ResponseEntity<?> verifierPrerequisEtSoumettre(@PathVariable Long id) {
-        log.info("REST request to verify prerequis for soutenance: {}", id);
-        try {
-            Soutenance verified = soutenanceService.verifierPrerequisEtSoumettre(id);
-            return ResponseEntity.ok(verified);
-        } catch (RuntimeException e) {
-            log.error("Error verifying prerequis: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // ========================================================
-    // ENDPOINTS EXISTANTS
+    // ÉTAPE 2: DIRECTEUR - Propose le jury (PREREQUIS_VALIDES → JURY_PROPOSE)
     // ========================================================
 
     @PostMapping("/{id}/jury")
-    public ResponseEntity<Soutenance> ajouterMembreJury(@PathVariable Long id, @Valid @RequestBody MembreJury membreJury) {
-        log.info("REST request to add jury member to soutenance: {}", id);
+    public ResponseEntity<?> ajouterMembreJury(@PathVariable Long id, @Valid @RequestBody MembreJury membreJury) {
         try {
-            Soutenance updated = soutenanceService.ajouterMembreJury(id, membreJury);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(soutenanceService.ajouterMembreJury(id, membreJury));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/jury")
+    public ResponseEntity<?> getMembresJury(@PathVariable Long id) {
+        return soutenanceService.getSoutenanceById(id)
+                .map(s -> ResponseEntity.ok(s.getMembresJury()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{soutenanceId}/jury/{membreId}")
+    public ResponseEntity<?> supprimerMembreJury(@PathVariable Long soutenanceId, @PathVariable Long membreId) {
+        try {
+            return ResponseEntity.ok(soutenanceService.supprimerMembreJury(soutenanceId, membreId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     @PutMapping("/{id}/proposer-jury")
-    public ResponseEntity<Soutenance> proposerJury(@PathVariable Long id) {
-        log.info("REST request to propose jury for soutenance: {}", id);
+    public ResponseEntity<?> proposerJury(@PathVariable Long id) {
         try {
-            Soutenance proposed = soutenanceService.proposerJury(id);
-            return ResponseEntity.ok(proposed);
+            return ResponseEntity.ok(soutenanceService.proposerJury(id));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
+    // ========================================================
+    // ÉTAPE 3: ADMIN - Valide ou refuse le jury (JURY_PROPOSE → AUTORISEE)
+    // ========================================================
+
+    @PutMapping("/{id}/valider-jury")
+    public ResponseEntity<?> validerJury(@PathVariable Long id, @RequestBody(required = false) Map<String, String> payload) {
+        try {
+            String commentaire = (payload != null) ? payload.get("commentaire") : null;
+            return ResponseEntity.ok(soutenanceService.validerJury(id, commentaire));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/refuser-jury")
+    public ResponseEntity<?> refuserJury(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        try {
+            String commentaire = payload.get("commentaire");
+            if (commentaire == null || commentaire.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Le motif de refus est obligatoire"));
+            }
+            return ResponseEntity.ok(soutenanceService.refuserJury(id, commentaire.trim()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // ÉTAPE 4: DIRECTEUR - Propose date de soutenance
+    // ========================================================
+
+    @PutMapping("/{id}/proposer-date")
+    public ResponseEntity<?> proposerDateSoutenance(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        try {
+            String dateStr = (String) payload.get("dateSoutenance");
+            String heureStr = (String) payload.get("heureSoutenance");
+            String lieu = (String) payload.get("lieuSoutenance");
+
+            LocalDate date = LocalDate.parse(dateStr);
+            LocalTime heure = (heureStr != null && !heureStr.isEmpty()) ? LocalTime.parse(heureStr) : null;
+
+            return ResponseEntity.ok(soutenanceService.proposerDateSoutenance(id, date, heure, lieu));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // ÉTAPE 5: ADMIN - Planifie la soutenance (AUTORISEE → PLANIFIEE)
+    // ========================================================
+
+    @PutMapping("/{id}/planifier")
+    public ResponseEntity<?> planifierSoutenance(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        try {
+            String dateStr = (String) payload.get("dateSoutenance");
+            String heureStr = (String) payload.get("heureSoutenance");
+            String lieu = (String) payload.get("lieuSoutenance");
+
+            LocalDate date = LocalDate.parse(dateStr);
+            LocalTime heure = (heureStr != null && !heureStr.isEmpty()) ? LocalTime.parse(heureStr) : LocalTime.of(9, 0);
+
+            return ResponseEntity.ok(soutenanceService.planifierSoutenance(id, date, heure, lieu));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/refuser-planification")
+    public ResponseEntity<?> refuserPlanification(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        try {
+            String commentaire = payload.get("commentaire");
+            if (commentaire == null || commentaire.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Le motif de refus est obligatoire"));
+            }
+            return ResponseEntity.ok(soutenanceService.refuserPlanification(id, commentaire.trim()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // ÉTAPE 6: RÉSULTAT (PLANIFIEE → TERMINEE)
+    // ========================================================
+
+    @PutMapping("/{id}/resultat")
+    public ResponseEntity<?> enregistrerResultat(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        try {
+            Double note = body.get("note") != null ? ((Number) body.get("note")).doubleValue() : null;
+            String mention = (String) body.get("mention");
+            Boolean felicitations = (Boolean) body.get("felicitations");
+            return ResponseEntity.ok(soutenanceService.enregistrerResultat(id, note, mention, felicitations));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // REJET GÉNÉRAL
+    // ========================================================
+
+    @PutMapping("/{id}/rejeter")
+    public ResponseEntity<?> rejeterSoutenance(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        try {
+            return ResponseEntity.ok(soutenanceService.rejeterSoutenance(id, body.get("motif")));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ========================================================
+    // AUTRES
+    // ========================================================
+
     @PutMapping("/{soutenanceId}/jury/{membreJuryId}/rapport")
-    public ResponseEntity<Soutenance> soumettreRapport(
-            @PathVariable Long soutenanceId,
-            @PathVariable Long membreJuryId,
-            @RequestBody Map<String, Object> body) {
-        log.info("REST request to submit rapport for rapporteur {} in soutenance {}", membreJuryId, soutenanceId);
+    public ResponseEntity<?> soumettreRapport(@PathVariable Long soutenanceId, @PathVariable Long membreJuryId, @RequestBody Map<String, Object> body) {
         try {
             Boolean avisFavorable = (Boolean) body.get("avisFavorable");
             String commentaire = (String) body.get("commentaire");
-            Soutenance updated = soutenanceService.soumettreRapportRapporteur(soutenanceId, membreJuryId, avisFavorable, commentaire);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(soutenanceService.soumettreRapportRapporteur(soutenanceId, membreJuryId, avisFavorable, commentaire));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-    }
-
-    @PutMapping("/{id}/autoriser")
-    public ResponseEntity<Soutenance> autoriserSoutenance(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to authorize soutenance: {}", id);
-        try {
-            String commentaire = body.get("commentaire");
-            Soutenance authorized = soutenanceService.autoriserSoutenance(id, commentaire);
-            return ResponseEntity.ok(authorized);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PutMapping("/{id}/planifier")
-    public ResponseEntity<Soutenance> planifierSoutenance(
-            @PathVariable Long id,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime heure,
-            @RequestParam String lieu) {
-        log.info("REST request to plan soutenance: {}", id);
-        try {
-            Soutenance planned = soutenanceService.planifierSoutenance(id, date, heure, lieu);
-            return ResponseEntity.ok(planned);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PutMapping("/{id}/resultat")
-    public ResponseEntity<Soutenance> enregistrerResultat(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        log.info("REST request to record result for soutenance: {}", id);
-        try {
-            Double note = ((Number) body.get("note")).doubleValue();
-            String mention = (String) body.get("mention");
-            Boolean felicitations = (Boolean) body.get("felicitations");
-            Soutenance completed = soutenanceService.enregistrerResultat(id, note, mention, felicitations);
-            return ResponseEntity.ok(completed);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PutMapping("/{id}/rejeter")
-    public ResponseEntity<Soutenance> rejeterSoutenance(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to reject soutenance: {}", id);
-        try {
-            String motif = body.get("motif");
-            Soutenance rejected = soutenanceService.rejeterSoutenance(id, motif);
-            return ResponseEntity.ok(rejected);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSoutenance(@PathVariable Long id) {
-        log.info("REST request to delete soutenance with id: {}", id);
-        soutenanceService.deleteSoutenance(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/test")

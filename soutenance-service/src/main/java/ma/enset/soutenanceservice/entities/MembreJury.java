@@ -1,6 +1,6 @@
 package ma.enset.soutenanceservice.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;  // ← AJOUTE CETTE LIGNE
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -20,9 +20,10 @@ public class MembreJury {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    // ✅ CRUCIAL : @JsonIgnore empêche la boucle infinie
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "soutenance_id", nullable = false)
-    @JsonIgnore  // ← AJOUTE CETTE LIGNE
+    @JsonIgnore
     private Soutenance soutenance;
 
     @Enumerated(EnumType.STRING)
@@ -42,10 +43,10 @@ public class MembreJury {
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    // ✅ CORRECTION : On retire nullable=false pour éviter les crashs si l'info manque
     private String etablissement;
 
-    @Column(nullable = false)
+    // ✅ CORRECTION : On retire nullable=false
     private String grade;
 
     @Column(length = 500)
