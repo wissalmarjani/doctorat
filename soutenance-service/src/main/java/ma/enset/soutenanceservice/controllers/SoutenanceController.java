@@ -3,8 +3,10 @@ package ma.enset.soutenanceservice.controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.enset.soutenanceservice.entities.JuryDisponible;
 import ma.enset.soutenanceservice.entities.MembreJury;
 import ma.enset.soutenanceservice.entities.Soutenance;
+import ma.enset.soutenanceservice.enums.RoleJury;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
 import ma.enset.soutenanceservice.services.SoutenanceService;
 import org.springframework.http.HttpStatus;
@@ -120,6 +122,47 @@ public class SoutenanceController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    // ========================================================
+    // JURYS DISPONIBLES (pour sélection dropdown)
+    // ========================================================
+
+    /**
+     * Récupérer tous les jurys disponibles
+     */
+    @GetMapping("/jury/disponibles")
+    public ResponseEntity<List<JuryDisponible>> getJurysDisponibles() {
+        log.info("📋 Récupération de tous les jurys disponibles");
+        return ResponseEntity.ok(soutenanceService.getJurysDisponibles());
+    }
+
+    /**
+     * Récupérer les jurys disponibles par rôle
+     * @param role - PRESIDENT, RAPPORTEUR, EXAMINATEUR
+     */
+    @GetMapping("/jury/disponibles/{role}")
+    public ResponseEntity<?> getJurysDisponiblesByRole(@PathVariable String role) {
+        log.info("📋 Récupération des jurys disponibles pour le rôle: {}", role);
+        try {
+            RoleJury roleJury = RoleJury.valueOf(role.toUpperCase());
+            List<JuryDisponible> jurys = soutenanceService.getJurysDisponiblesByRole(roleJury);
+            log.info("✅ {} jurys trouvés pour le rôle {}", jurys.size(), role);
+            return ResponseEntity.ok(jurys);
+        } catch (IllegalArgumentException e) {
+            log.error("❌ Rôle invalide: {}", role);
+            return ResponseEntity.badRequest().body(Map.of("error", "Rôle invalide: " + role));
+        }
+    }
+
+    /**
+     * Récupérer un jury disponible par ID
+     */
+    @GetMapping("/jury/disponibles/id/{id}")
+    public ResponseEntity<?> getJuryDisponibleById(@PathVariable Long id) {
+        return soutenanceService.getJuryDisponibleById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // ========================================================

@@ -9,53 +9,60 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface DerogationRepository extends JpaRepository<Derogation, Long> {
 
-    /**
-     * Trouve toutes les dérogations d'un doctorant
-     */
+    // ========== DOCTORANT ==========
+
     List<Derogation> findByDoctorantIdOrderByDateDemandeDesc(Long doctorantId);
 
-    /**
-     * Trouve les dérogations par statut
-     */
-    List<Derogation> findByStatut(StatutDerogation statut);
+    // ========== DIRECTEUR ==========
+
+    List<Derogation> findByDirecteurIdAndStatut(Long directeurId, StatutDerogation statut);
+
+    List<Derogation> findByDirecteurIdOrderByDateDemandeDesc(Long directeurId);
 
     /**
-     * Trouve les dérogations en attente
+     * Récupérer toutes les dérogations pour un directeur
      */
+    @Query("SELECT d FROM Derogation d WHERE d.directeurId = :directeurId ORDER BY d.dateDemande DESC")
+    List<Derogation> findAllByDirecteurId(@Param("directeurId") Long directeurId);
+
+    // ========== ADMIN ==========
+
     List<Derogation> findByStatutOrderByDateDemandeAsc(StatutDerogation statut);
 
-    /**
-     * Vérifie si une dérogation approuvée existe pour un doctorant et une année
-     */
-    @Query("SELECT d FROM Derogation d WHERE d.doctorantId = :doctorantId " +
-           "AND d.anneeDemandee = :annee AND d.statut = 'APPROUVEE' " +
-           "AND (d.dateExpiration IS NULL OR d.dateExpiration >= CURRENT_DATE)")
-    Optional<Derogation> findDerogationValide(@Param("doctorantId") Long doctorantId, 
-                                               @Param("annee") Integer annee);
+    List<Derogation> findByStatut(StatutDerogation statut);
 
-    /**
-     * Vérifie si le doctorant a une dérogation approuvée et valide
-     */
+    List<Derogation> findByStatutIn(List<StatutDerogation> statuts);
+
+    // ========== VÉRIFICATIONS ==========
+
     @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Derogation d " +
-           "WHERE d.doctorantId = :doctorantId AND d.statut = 'APPROUVEE' " +
-           "AND d.anneeDemandee >= :annee " +
-           "AND (d.dateExpiration IS NULL OR d.dateExpiration >= CURRENT_DATE)")
-    boolean hasDerogationValide(@Param("doctorantId") Long doctorantId, @Param("annee") Integer annee);
+            "WHERE d.doctorantId = :doctorantId " +
+            "AND d.anneeDemandee = :annee " +
+            "AND d.statut = :statut " +
+            "AND (d.dateExpiration IS NULL OR d.dateExpiration >= CURRENT_DATE)")
+    boolean hasDerogationValideByStatut(@Param("doctorantId") Long doctorantId,
+                                        @Param("annee") int annee,
+                                        @Param("statut") StatutDerogation statut);
 
-    /**
-     * Trouve la dernière dérogation approuvée d'un doctorant
-     */
-    @Query("SELECT d FROM Derogation d WHERE d.doctorantId = :doctorantId " +
-           "AND d.statut = 'APPROUVEE' ORDER BY d.anneeDemandee DESC")
-    List<Derogation> findDernieresDerogationsApprouvees(@Param("doctorantId") Long doctorantId);
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Derogation d " +
+            "WHERE d.doctorantId = :doctorantId " +
+            "AND d.typeDerogation = :type " +
+            "AND d.statut IN :statuts")
+    boolean hasDerogationEnCoursByStatuts(@Param("doctorantId") Long doctorantId,
+                                          @Param("type") TypeDerogation type,
+                                          @Param("statuts") List<StatutDerogation> statuts);
 
-    /**
-     * Compte les dérogations en attente (pour dashboard admin)
-     */
-    long countByStatut(StatutDerogation statut);
+    // Méthodes simplifiées qui utilisent les méthodes ci-dessus
+    default boolean hasDerogationValide(Long doctorantId, int annee) {
+        return hasDerogationValideByStatut(doctorantId, annee, StatutDerogation.APPROUVEE);
+    }
+
+    default boolean hasDerogationEnCours(Long doctorantId, TypeDerogation type) {
+        return hasDerogationEnCoursByStatuts(doctorantId, type,
+                List.of(StatutDerogation.EN_ATTENTE_DIRECTEUR, StatutDerogation.EN_ATTENTE_ADMIN, StatutDerogation.EN_ATTENTE));
+    }
 }

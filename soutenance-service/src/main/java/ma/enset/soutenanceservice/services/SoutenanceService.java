@@ -1,7 +1,9 @@
 package ma.enset.soutenanceservice.services;
 
+import ma.enset.soutenanceservice.entities.JuryDisponible;
 import ma.enset.soutenanceservice.entities.MembreJury;
 import ma.enset.soutenanceservice.entities.Soutenance;
+import ma.enset.soutenanceservice.enums.RoleJury;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,6 +45,26 @@ public interface SoutenanceService {
 
     Soutenance validerPrerequisDirecteur(Long soutenanceId, String commentaire);
     Soutenance rejeterParDirecteur(Long soutenanceId, String commentaire);
+
+    // ========================================================
+    // JURYS DISPONIBLES (pour sélection dropdown)
+    // ========================================================
+
+    /**
+     * Récupérer tous les jurys disponibles
+     */
+    List<JuryDisponible> getJurysDisponibles();
+
+    /**
+     * Récupérer les jurys disponibles par rôle
+     * @param role - PRESIDENT, RAPPORTEUR, EXAMINATEUR
+     */
+    List<JuryDisponible> getJurysDisponiblesByRole(RoleJury role);
+
+    /**
+     * Récupérer un jury disponible par ID
+     */
+    Optional<JuryDisponible> getJuryDisponibleById(Long id);
 
     // ========================================================
     // ÉTAPE 2: DIRECTEUR - Propose le jury

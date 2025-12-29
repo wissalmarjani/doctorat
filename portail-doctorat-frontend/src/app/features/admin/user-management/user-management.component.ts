@@ -141,7 +141,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                           <td colspan="5">
                             <div class="details-panel">
                               <div class="details-grid">
-                                <!-- Infos -->
                                 <div class="detail-card">
                                   <h4><i class="bi bi-person-badge"></i>Informations</h4>
                                   <div class="info-list">
@@ -150,8 +149,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                     <div class="info-item"><span class="label">Téléphone</span><span class="value">{{ user.telephone || 'Non renseigné' }}</span></div>
                                   </div>
                                 </div>
-
-                                <!-- Documents -->
                                 <div class="detail-card">
                                   <h4><i class="bi bi-folder2-open"></i>Documents</h4>
                                   <div class="docs-list">
@@ -172,8 +169,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                                     </div>
                                   </div>
                                 </div>
-
-                                <!-- Actions -->
                                 <div class="detail-card actions-card">
                                   <h4><i class="bi bi-lightning"></i>Actions</h4>
                                   @if (showRefusalInputId() !== user.id) {
@@ -262,6 +257,7 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
           <div class="section-card">
             <div class="section-header">
               <h3><i class="bi bi-mortarboard-fill"></i>Liste des Doctorants</h3>
+              <span class="header-hint">Cliquez sur un doctorant pour modifier ses prérequis</span>
             </div>
             @if (doctorants().length === 0) {
               <div class="empty-state">
@@ -278,12 +274,13 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                     <th>Matricule</th>
                     <th>Directeur</th>
                     <th>Année</th>
-                    <th>Statut</th>
+                    <th>Prérequis</th>
+                    <th></th>
                   </tr>
                   </thead>
                   <tbody>
                     @for (doc of doctorants(); track doc.id) {
-                      <tr>
+                      <tr [class.expanded]="expandedDoctorantId() === doc.id" (click)="toggleDoctorantExpand(doc.id)">
                         <td>
                           <div class="user-cell">
                             <div class="user-avatar green">{{ doc.nom?.charAt(0) }}{{ doc.prenom?.charAt(0) }}</div>
@@ -295,9 +292,130 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
                         </td>
                         <td><span class="matricule-badge">{{ doc.username }}</span></td>
                         <td><span class="director-name">{{ getDirecteurName(doc.directeurId) }}</span></td>
-                        <td><span class="year-badge">{{ doc.anneeThese || 1 }}{{ (doc.anneeThese || 1) === 1 ? 'ère' : 'ème' }}</span></td>
-                        <td><span class="status-badge success">ACTIF</span></td>
+                        <td><span class="year-badge">{{ doc.anneeThese || 1 }}{{ getYearSuffix(doc.anneeThese || 1) }}</span></td>
+                        <td>
+                          <div class="prerequisites-summary">
+                            <span class="prereq-item" [class.complete]="(doc.nbPublications || 0) >= 2">
+                              <i class="bi bi-journal-text"></i> {{ doc.nbPublications || 0 }}/2
+                            </span>
+                            <span class="prereq-item" [class.complete]="(doc.nbConferences || 0) >= 2">
+                              <i class="bi bi-mic"></i> {{ doc.nbConferences || 0 }}/2
+                            </span>
+                            <span class="prereq-item" [class.complete]="(doc.heuresFormation || 0) >= 200">
+                              <i class="bi bi-clock"></i> {{ doc.heuresFormation || 0 }}/200h
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <i class="bi bi-chevron-down expand-icon" [class.rotated]="expandedDoctorantId() === doc.id"></i>
+                        </td>
                       </tr>
+
+                      <!-- Expanded Row: Edit Prerequisites -->
+                      @if (expandedDoctorantId() === doc.id) {
+                        <tr class="details-row doctorant-details">
+                          <td colspan="6">
+                            <div class="details-panel">
+                              <div class="prereq-edit-container">
+                                <div class="prereq-header">
+                                  <h4><i class="bi bi-sliders"></i>Modifier les prérequis de {{ doc.prenom }} {{ doc.nom }}</h4>
+                                  <p>Ces informations apparaîtront dans le dashboard du doctorant et les demandes de soutenance.</p>
+                                </div>
+
+                                <div class="prereq-form">
+                                  <div class="prereq-field">
+                                    <label>
+                                      <i class="bi bi-journal-text"></i>
+                                      Publications Q1/Q2
+                                    </label>
+                                    <div class="input-group">
+                                      <button class="btn-decrement" (click)="decrementPrereq('publications', doc, $event)" [disabled]="(editPrereqs[doc.id]?.nbPublications ?? doc.nbPublications ?? 0) <= 0">
+                                        <i class="bi bi-dash"></i>
+                                      </button>
+                                      <input
+                                          type="number"
+                                          [ngModel]="editPrereqs[doc.id]?.nbPublications ?? doc.nbPublications ?? 0"
+                                          (ngModelChange)="updatePrereqValue(doc.id, 'nbPublications', $event)"
+                                          min="0"
+                                          max="99"
+                                          (click)="$event.stopPropagation()">
+                                      <button class="btn-increment" (click)="incrementPrereq('publications', doc, $event)">
+                                        <i class="bi bi-plus"></i>
+                                      </button>
+                                    </div>
+                                    <span class="prereq-target">Objectif: 2 minimum</span>
+                                  </div>
+
+                                  <div class="prereq-field">
+                                    <label>
+                                      <i class="bi bi-mic"></i>
+                                      Conférences internationales
+                                    </label>
+                                    <div class="input-group">
+                                      <button class="btn-decrement" (click)="decrementPrereq('conferences', doc, $event)" [disabled]="(editPrereqs[doc.id]?.nbConferences ?? doc.nbConferences ?? 0) <= 0">
+                                        <i class="bi bi-dash"></i>
+                                      </button>
+                                      <input
+                                          type="number"
+                                          [ngModel]="editPrereqs[doc.id]?.nbConferences ?? doc.nbConferences ?? 0"
+                                          (ngModelChange)="updatePrereqValue(doc.id, 'nbConferences', $event)"
+                                          min="0"
+                                          max="99"
+                                          (click)="$event.stopPropagation()">
+                                      <button class="btn-increment" (click)="incrementPrereq('conferences', doc, $event)">
+                                        <i class="bi bi-plus"></i>
+                                      </button>
+                                    </div>
+                                    <span class="prereq-target">Objectif: 2 minimum</span>
+                                  </div>
+
+                                  <div class="prereq-field">
+                                    <label>
+                                      <i class="bi bi-clock"></i>
+                                      Heures de formation
+                                    </label>
+                                    <div class="input-group">
+                                      <button class="btn-decrement" (click)="decrementPrereq('heures', doc, $event)" [disabled]="(editPrereqs[doc.id]?.heuresFormation ?? doc.heuresFormation ?? 0) <= 0">
+                                        <i class="bi bi-dash"></i>
+                                      </button>
+                                      <input
+                                          type="number"
+                                          [ngModel]="editPrereqs[doc.id]?.heuresFormation ?? doc.heuresFormation ?? 0"
+                                          (ngModelChange)="updatePrereqValue(doc.id, 'heuresFormation', $event)"
+                                          min="0"
+                                          max="999"
+                                          (click)="$event.stopPropagation()">
+                                      <button class="btn-increment" (click)="incrementPrereq('heures', doc, $event)">
+                                        <i class="bi bi-plus"></i>
+                                      </button>
+                                    </div>
+                                    <span class="prereq-target">Objectif: 200h minimum</span>
+                                  </div>
+                                </div>
+
+                                <div class="prereq-actions">
+                                  <button class="btn-cancel-prereq" (click)="cancelPrereqEdit(doc.id, $event)">
+                                    <i class="bi bi-x-lg"></i>
+                                    Annuler
+                                  </button>
+                                  <button
+                                      class="btn-save-prereq"
+                                      (click)="savePrerequisites(doc, $event)"
+                                      [disabled]="isSavingPrereq()">
+                                    @if (isSavingPrereq()) {
+                                      <span class="spinner-sm"></span>
+                                      Enregistrement...
+                                    } @else {
+                                      <i class="bi bi-check-lg"></i>
+                                      Enregistrer
+                                    }
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      }
                     }
                   </tbody>
                 </table>
@@ -320,13 +438,11 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
             </div>
             <button class="modal-close" (click)="closeDirectorModal()"><i class="bi bi-x-lg"></i></button>
           </div>
-
           <div class="modal-body">
             <div class="search-box">
               <i class="bi bi-search"></i>
               <input type="text" [(ngModel)]="searchDirecteur" placeholder="Rechercher un directeur...">
             </div>
-
             <div class="directors-list">
               @for (dir of filteredDirecteurs(); track dir.id) {
                 <div class="director-card" [class.selected]="selectedDirecteurId() === dir.id" (click)="selectDirecteur(dir.id)">
@@ -346,7 +462,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
               }
             </div>
           </div>
-
           <div class="modal-footer">
             <button class="btn-modal-cancel" (click)="closeDirectorModal()">Annuler</button>
             <button class="btn-modal-confirm" [disabled]="!selectedDirecteurId() || isValidating()" (click)="confirmValidationWithDirector()">
@@ -360,12 +475,19 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
         </div>
       }
 
+      <!-- Toast -->
+      @if (toast().show) {
+        <div class="toast" [class.success]="toast().type === 'success'" [class.error]="toast().type === 'error'">
+          <i class="bi" [class.bi-check-circle-fill]="toast().type === 'success'" [class.bi-x-circle-fill]="toast().type === 'error'"></i>
+          {{ toast().message }}
+        </div>
+      }
+
     </app-main-layout>
   `,
   styles: [`
     .page-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
 
-    /* Hero */
     .hero-section { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 24px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
     .hero-content { display: flex; align-items: center; gap: 1.25rem; color: white; }
     .hero-icon { width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; }
@@ -376,7 +498,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .btn-refresh:disabled { opacity: 0.7; cursor: not-allowed; }
     .spinner { width: 16px; height: 16px; border: 2px solid #e0e7ff; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
-    /* Stats */
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
     .stat-card { background: white; border-radius: 16px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; }
     .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
@@ -387,7 +508,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .stat-value { font-size: 1.5rem; font-weight: 700; color: #1e293b; display: block; }
     .stat-label { font-size: 0.8rem; color: #64748b; }
 
-    /* Tabs */
     .tabs-container { display: flex; justify-content: center; margin-bottom: 1.5rem; }
     .tabs { background: #f1f5f9; padding: 5px; border-radius: 50px; display: inline-flex; gap: 5px; }
     .tab-btn { border: none; background: transparent; padding: 0.75rem 1.5rem; border-radius: 40px; font-weight: 600; color: #64748b; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s; }
@@ -395,15 +515,14 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .tab-btn.active { background: white; color: #4f46e5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .tab-badge { background: #ef4444; color: white; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.75rem; }
 
-    /* Section Card */
     .section-card { background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; }
     .section-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; }
     .section-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
     .section-header h3 i { color: #6366f1; }
+    .header-hint { font-size: 0.8rem; color: #64748b; font-style: italic; }
     .btn-add { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; background: #6366f1; color: white; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: all 0.2s; }
     .btn-add:hover { background: #4f46e5; }
 
-    /* Table */
     .table-container { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th { padding: 1rem 1.25rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
@@ -412,7 +531,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .data-table tbody tr:hover { background: #f8fafc; }
     .data-table tbody tr.expanded { background: #eef2ff; border-left: 3px solid #6366f1; }
 
-    /* User Cell */
     .user-cell { display: flex; align-items: center; gap: 0.75rem; }
     .user-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; }
     .user-avatar.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
@@ -420,12 +538,9 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .user-info { display: flex; flex-direction: column; }
     .user-name { font-weight: 600; color: #1e293b; }
     .user-id, .user-email { font-size: 0.8rem; color: #64748b; }
-
-    /* Contact Cell */
     .contact-cell { display: flex; flex-direction: column; }
     .contact-phone { font-size: 0.8rem; color: #64748b; }
 
-    /* Badges */
     .date-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; background: #f1f5f9; border-radius: 6px; font-size: 0.8rem; color: #475569; }
     .status-badge { padding: 0.35rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
     .status-badge.warning { background: #fef3c7; color: #b45309; }
@@ -438,11 +553,15 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .year-badge { background: #dbeafe; color: #1d4ed8; padding: 0.25rem 0.6rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
     .director-name { color: #4f46e5; font-weight: 500; }
 
-    /* Expand Icon */
+    /* Prerequisites Summary */
+    .prerequisites-summary { display: flex; gap: 0.5rem; }
+    .prereq-item { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: #f1f5f9; border-radius: 6px; font-size: 0.75rem; color: #64748b; }
+    .prereq-item.complete { background: #dcfce7; color: #15803d; }
+    .prereq-item i { font-size: 0.7rem; }
+
     .expand-icon { color: #94a3b8; transition: transform 0.3s; }
     .expand-icon.rotated { transform: rotate(180deg); }
 
-    /* Details Panel */
     .details-row { background: #f8fafc; }
     .details-row td { padding: 0 !important; border: none !important; }
     .details-panel { padding: 1.5rem; animation: slideDown 0.3s ease-out; }
@@ -454,7 +573,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .info-item .label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
     .info-item .value { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
 
-    /* Docs */
     .docs-list { display: flex; flex-direction: column; gap: 0.5rem; }
     .doc-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
     .doc-item:hover { background: #f1f5f9; }
@@ -468,7 +586,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .text-success { color: #22c55e; }
     .text-muted { color: #cbd5e1; }
 
-    /* Actions */
     .actions-card { border-color: #c7d2fe; background: linear-gradient(135deg, #f5f3ff, #eef2ff); }
     .actions-buttons { display: flex; flex-direction: column; gap: 0.75rem; }
     .btn-validate { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
@@ -476,7 +593,6 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .btn-reject { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem; background: white; color: #dc2626; border: 2px solid #fecaca; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .btn-reject:hover { background: #fef2f2; border-color: #f87171; }
 
-    /* Refusal Form */
     .refusal-form textarea { width: 100%; padding: 0.75rem; border: 2px solid #fecaca; border-radius: 10px; resize: none; font-size: 0.9rem; margin-bottom: 0.75rem; }
     .refusal-form textarea:focus { outline: none; border-color: #f87171; }
     .refusal-actions { display: flex; gap: 0.5rem; }
@@ -484,7 +600,40 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .btn-confirm-sm { flex: 1; padding: 0.5rem; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-confirm-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Empty State */
+    /* Prerequisites Edit Form */
+    .doctorant-details .details-panel { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+    .prereq-edit-container { background: white; border-radius: 16px; padding: 1.5rem; border: 1px solid #a7f3d0; }
+    .prereq-header { margin-bottom: 1.5rem; }
+    .prereq-header h4 { margin: 0 0 0.5rem; font-size: 1rem; font-weight: 700; color: #065f46; display: flex; align-items: center; gap: 0.5rem; }
+    .prereq-header p { margin: 0; font-size: 0.85rem; color: #64748b; }
+
+    .prereq-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .prereq-field { display: flex; flex-direction: column; gap: 0.5rem; }
+    .prereq-field label { font-size: 0.85rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; }
+    .prereq-field label i { color: #10b981; }
+
+    .input-group { display: flex; align-items: center; gap: 0; }
+    .input-group input { width: 80px; text-align: center; padding: 0.75rem; border: 2px solid #e2e8f0; font-size: 1.1rem; font-weight: 600; color: #1e293b; }
+    .input-group input:focus { outline: none; border-color: #10b981; }
+    .input-group input::-webkit-inner-spin-button,
+    .input-group input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .input-group input[type=number] { -moz-appearance: textfield; }
+
+    .btn-decrement, .btn-increment { width: 40px; height: 46px; border: 2px solid #e2e8f0; background: #f8fafc; color: #64748b; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+    .btn-decrement { border-radius: 10px 0 0 10px; border-right: none; }
+    .btn-increment { border-radius: 0 10px 10px 0; border-left: none; }
+    .btn-decrement:hover:not(:disabled), .btn-increment:hover:not(:disabled) { background: #10b981; color: white; border-color: #10b981; }
+    .btn-decrement:disabled, .btn-increment:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .prereq-target { font-size: 0.75rem; color: #64748b; }
+
+    .prereq-actions { display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+    .btn-cancel-prereq { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; background: white; border: 2px solid #e2e8f0; border-radius: 10px; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-cancel-prereq:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .btn-save-prereq { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+    .btn-save-prereq:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16,185,129,0.4); }
+    .btn-save-prereq:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
     .empty-state { padding: 4rem 2rem; text-align: center; }
     .empty-icon { width: 80px; height: 80px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
     .empty-icon i { font-size: 2rem; color: #94a3b8; }
@@ -524,19 +673,27 @@ import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.
     .btn-modal-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
     .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
 
+    /* Toast */
+    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 1000; animation: slideIn 0.3s ease; }
+    .toast.success { background: #10b981; color: white; }
+    .toast.error { background: #ef4444; color: white; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes modalIn { from { opacity: 0; transform: translate(-50%, -48%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     @media (max-width: 992px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .details-grid { grid-template-columns: 1fr; }
+      .prereq-form { grid-template-columns: 1fr; }
     }
     @media (max-width: 768px) {
       .hero-section { flex-direction: column; gap: 1.5rem; text-align: center; }
       .hero-content { flex-direction: column; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .tabs { flex-wrap: wrap; justify-content: center; }
+      .prerequisites-summary { flex-wrap: wrap; }
     }
   `]
 })
@@ -547,14 +704,21 @@ export class UserManagementComponent implements OnInit {
   doctorants = signal<User[]>([]);
   isLoading = signal(false);
   expandedUserId = signal<number | null>(null);
+  expandedDoctorantId = signal<number | null>(null);
   showRefusalInputId = signal<number | null>(null);
   motifText = '';
+  isSavingPrereq = signal(false);
+
+  // Edit prerequisites
+  editPrereqs: { [key: number]: { nbPublications: number; nbConferences: number; heuresFormation: number } } = {};
 
   showDirectorModal = signal(false);
   selectedCandidat = signal<User | null>(null);
   selectedDirecteurId = signal<number | null>(null);
   searchDirecteur = '';
   isValidating = signal(false);
+
+  toast = signal<{show: boolean, message: string, type: 'success' | 'error'}>({show: false, message: '', type: 'success'});
 
   constructor(private userService: UserService) {}
 
@@ -563,6 +727,7 @@ export class UserManagementComponent implements OnInit {
   setTab(tab: string) {
     this.activeTab = tab;
     this.expandedUserId.set(null);
+    this.expandedDoctorantId.set(null);
     this.showRefusalInputId.set(null);
     this.motifText = '';
   }
@@ -592,6 +757,135 @@ export class UserManagementComponent implements OnInit {
       this.showRefusalInputId.set(null);
     }
     this.motifText = '';
+  }
+
+  toggleDoctorantExpand(id: number) {
+    if (this.expandedDoctorantId() === id) {
+      this.expandedDoctorantId.set(null);
+      delete this.editPrereqs[id];
+    } else {
+      this.expandedDoctorantId.set(id);
+      // Initialize edit values
+      const doc = this.doctorants().find(d => d.id === id);
+      if (doc) {
+        this.editPrereqs[id] = {
+          nbPublications: doc.nbPublications || 0,
+          nbConferences: doc.nbConferences || 0,
+          heuresFormation: doc.heuresFormation || 0
+        };
+      }
+    }
+  }
+
+  updatePrereqValue(docId: number, field: string, value: number) {
+    if (!this.editPrereqs[docId]) {
+      const doc = this.doctorants().find(d => d.id === docId);
+      this.editPrereqs[docId] = {
+        nbPublications: doc?.nbPublications || 0,
+        nbConferences: doc?.nbConferences || 0,
+        heuresFormation: doc?.heuresFormation || 0
+      };
+    }
+    (this.editPrereqs[docId] as any)[field] = Math.max(0, value || 0);
+  }
+
+  incrementPrereq(type: string, doc: User, event: Event) {
+    event.stopPropagation();
+    if (!this.editPrereqs[doc.id]) {
+      this.editPrereqs[doc.id] = {
+        nbPublications: doc.nbPublications || 0,
+        nbConferences: doc.nbConferences || 0,
+        heuresFormation: doc.heuresFormation || 0
+      };
+    }
+
+    switch (type) {
+      case 'publications':
+        this.editPrereqs[doc.id].nbPublications++;
+        break;
+      case 'conferences':
+        this.editPrereqs[doc.id].nbConferences++;
+        break;
+      case 'heures':
+        this.editPrereqs[doc.id].heuresFormation += 10;
+        break;
+    }
+  }
+
+  decrementPrereq(type: string, doc: User, event: Event) {
+    event.stopPropagation();
+    if (!this.editPrereqs[doc.id]) {
+      this.editPrereqs[doc.id] = {
+        nbPublications: doc.nbPublications || 0,
+        nbConferences: doc.nbConferences || 0,
+        heuresFormation: doc.heuresFormation || 0
+      };
+    }
+
+    switch (type) {
+      case 'publications':
+        if (this.editPrereqs[doc.id].nbPublications > 0) this.editPrereqs[doc.id].nbPublications--;
+        break;
+      case 'conferences':
+        if (this.editPrereqs[doc.id].nbConferences > 0) this.editPrereqs[doc.id].nbConferences--;
+        break;
+      case 'heures':
+        if (this.editPrereqs[doc.id].heuresFormation >= 10) this.editPrereqs[doc.id].heuresFormation -= 10;
+        break;
+    }
+  }
+
+  cancelPrereqEdit(docId: number, event: Event) {
+    event.stopPropagation();
+    delete this.editPrereqs[docId];
+    this.expandedDoctorantId.set(null);
+  }
+
+  savePrerequisites(doc: User, event: Event) {
+    event.stopPropagation();
+    const prereqs = this.editPrereqs[doc.id];
+    if (!prereqs) return;
+
+    this.isSavingPrereq.set(true);
+
+    // Update user with new prerequisites
+    const updateData = {
+      nbPublications: prereqs.nbPublications,
+      nbConferences: prereqs.nbConferences,
+      heuresFormation: prereqs.heuresFormation
+    };
+
+    this.userService.updateUser(doc.id, updateData).subscribe({
+      next: (updatedUser) => {
+        this.isSavingPrereq.set(false);
+        this.showToast('Prérequis mis à jour avec succès', 'success');
+
+        // Update local list
+        const doctorants = this.doctorants();
+        const index = doctorants.findIndex(d => d.id === doc.id);
+        if (index !== -1) {
+          doctorants[index] = { ...doctorants[index], ...updateData };
+          this.doctorants.set([...doctorants]);
+        }
+
+        this.expandedDoctorantId.set(null);
+        delete this.editPrereqs[doc.id];
+      },
+      error: (err) => {
+        console.error('Erreur mise à jour prérequis:', err);
+        this.isSavingPrereq.set(false);
+        this.showToast('Erreur lors de la mise à jour', 'error');
+      }
+    });
+  }
+
+  showToast(message: string, type: 'success' | 'error') {
+    this.toast.set({show: true, message, type});
+    setTimeout(() => this.toast.set({show: false, message: '', type: 'success'}), 4000);
+  }
+
+  getYearSuffix(year: number): string {
+    return year === 1 ? 'ère' : 'ème';
   }
 
   viewDocument(filename: string | undefined, event: Event) {
@@ -627,8 +921,18 @@ export class UserManagementComponent implements OnInit {
     if (!candidat || !directeurId) return;
     this.isValidating.set(true);
     this.userService.validerCandidatureAdminAvecDirecteur(candidat.id, directeurId).subscribe({
-      next: () => { this.isValidating.set(false); this.closeDirectorModal(); this.loadData(); this.expandedUserId.set(null); },
-      error: (err) => { console.error(err); this.isValidating.set(false); alert('Erreur lors de la validation'); }
+      next: () => {
+        this.isValidating.set(false);
+        this.closeDirectorModal();
+        this.loadData();
+        this.expandedUserId.set(null);
+        this.showToast('Candidature validée avec succès', 'success');
+      },
+      error: (err) => {
+        console.error(err);
+        this.isValidating.set(false);
+        this.showToast('Erreur lors de la validation', 'error');
+      }
     });
   }
 
@@ -649,7 +953,12 @@ export class UserManagementComponent implements OnInit {
     if (!this.motifText.trim()) return;
     if (confirm(`Refuser le dossier de ${user.nom} ${user.prenom} ?`)) {
       this.userService.refuserCandidatureAdmin(user.id, this.motifText.trim()).subscribe({
-        next: () => { this.loadData(); this.showRefusalInputId.set(null); this.expandedUserId.set(null); },
+        next: () => {
+          this.loadData();
+          this.showRefusalInputId.set(null);
+          this.expandedUserId.set(null);
+          this.showToast('Candidature refusée', 'success');
+        },
         error: console.error
       });
     }

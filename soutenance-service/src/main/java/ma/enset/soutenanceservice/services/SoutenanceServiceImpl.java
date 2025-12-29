@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.soutenanceservice.clients.UserServiceClient;
 import ma.enset.soutenanceservice.dto.UserDTO;
+import ma.enset.soutenanceservice.entities.JuryDisponible;
 import ma.enset.soutenanceservice.entities.MembreJury;
 import ma.enset.soutenanceservice.entities.Soutenance;
+import ma.enset.soutenanceservice.enums.RoleJury;
 import ma.enset.soutenanceservice.enums.StatutSoutenance;
 import ma.enset.soutenanceservice.events.SoutenanceCreatedEvent;
 import ma.enset.soutenanceservice.events.SoutenanceStatusChangedEvent;
+import ma.enset.soutenanceservice.repositories.JuryDisponibleRepository;
 import ma.enset.soutenanceservice.repositories.MembreJuryRepository;
 import ma.enset.soutenanceservice.repositories.SoutenanceRepository;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,7 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
     private final SoutenanceRepository soutenanceRepository;
     private final MembreJuryRepository membreJuryRepository;
+    private final JuryDisponibleRepository juryDisponibleRepository;
     private final UserServiceClient userServiceClient;
     private final SoutenanceEventPublisher eventPublisher;
 
@@ -224,6 +228,31 @@ public class SoutenanceServiceImpl implements SoutenanceService {
     }
 
     // ========================================================
+    // JURYS DISPONIBLES (pour sélection dropdown)
+    // ========================================================
+
+    @Override
+    public List<JuryDisponible> getJurysDisponibles() {
+        log.info("📋 Récupération de tous les jurys disponibles");
+        List<JuryDisponible> jurys = juryDisponibleRepository.findAll();
+        log.info("✅ {} jurys disponibles trouvés", jurys.size());
+        return jurys;
+    }
+
+    @Override
+    public List<JuryDisponible> getJurysDisponiblesByRole(RoleJury role) {
+        log.info("📋 Récupération des jurys disponibles pour le rôle: {}", role);
+        List<JuryDisponible> jurys = juryDisponibleRepository.findByRole(role);
+        log.info("✅ {} jurys trouvés pour le rôle {}", jurys.size(), role);
+        return jurys;
+    }
+
+    @Override
+    public Optional<JuryDisponible> getJuryDisponibleById(Long id) {
+        return juryDisponibleRepository.findById(id);
+    }
+
+    // ========================================================
     // ÉTAPE 2: DIRECTEUR - Propose le jury
     // PREREQUIS_VALIDES → JURY_PROPOSE
     // ========================================================
@@ -313,7 +342,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     }
 
                     String ancienStatut = soutenance.getStatut().name();
-                    // Retour à PREREQUIS_VALIDES pour que le directeur modifie le jury
                     soutenance.setStatut(StatutSoutenance.PREREQUIS_VALIDES);
                     soutenance.setCommentaireAdmin(commentaire);
 
@@ -341,7 +369,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                     soutenance.setDateSoutenance(date);
                     soutenance.setHeureSoutenance(heure);
                     soutenance.setLieuSoutenance(lieu);
-                    // Le statut reste AUTORISEE, l'admin doit confirmer
 
                     return soutenanceRepository.save(soutenance);
                 })
@@ -393,7 +420,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
         return soutenanceRepository.findById(soutenanceId)
                 .map(soutenance -> {
                     String ancienStatut = soutenance.getStatut().name();
-                    // Retour à AUTORISEE pour que le directeur propose une autre date
                     soutenance.setStatut(StatutSoutenance.AUTORISEE);
                     soutenance.setCommentaireAdmin(commentaire);
                     soutenance.setDateSoutenance(null);
@@ -461,13 +487,11 @@ public class SoutenanceServiceImpl implements SoutenanceService {
 
     @Override
     public Soutenance verifierPrerequisEtSoumettre(Long id) {
-        // Legacy - redirige vers validerPrerequisDirecteur
         return validerPrerequisDirecteur(id, "Prérequis validés");
     }
 
     @Override
     public Soutenance autoriserSoutenance(Long id, String commentaire) {
-        // Legacy - redirige vers validerJury
         return validerJury(id, commentaire);
     }
 
@@ -509,9 +533,6 @@ public class SoutenanceServiceImpl implements SoutenanceService {
                 .build();
     }
 
-    /**
-     * ✅ IMPORTANT: Enrichir avec TOUTES les infos du doctorant (y compris prérequis)
-     */
     private Soutenance enrichirAvecInfosUtilisateurs(Soutenance soutenance) {
         try {
             UserDTO doctorant = userServiceClient.getUserById(soutenance.getDoctorantId());

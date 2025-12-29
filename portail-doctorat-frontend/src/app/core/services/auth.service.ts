@@ -15,10 +15,8 @@ export interface User {
   etat?: string;
   motifRefus?: string;
   directeurId?: number;
-  // ✅ Sujet de thèse
   titreThese?: string;
-  sujetThese?: string; // Alias
-  // Suivi doctorant
+  sujetThese?: string;
   anneeThese?: number;
   nbPublications?: number;
   nbConferences?: number;
@@ -40,9 +38,7 @@ export interface AuthResponse {
   etat?: string;
   motifRefus?: string;
   directeurId?: number;
-  // ✅ Sujet de thèse
   titreThese?: string;
-  // Suivi doctorant
   anneeThese?: number;
   nbPublications?: number;
   nbConferences?: number;
@@ -73,7 +69,6 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_KEY = 'current_user';
 
-  // Signal pour l'utilisateur courant
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
 
@@ -84,9 +79,6 @@ export class AuthService {
     this.loadUserFromStorage();
   }
 
-  /**
-   * Charge l'utilisateur depuis le localStorage au démarrage
-   */
   private loadUserFromStorage(): void {
     const token = localStorage.getItem(this.TOKEN_KEY);
     const userStr = localStorage.getItem(this.USER_KEY);
@@ -97,7 +89,6 @@ export class AuthService {
         this.currentUser.set(user);
         this.isAuthenticated.set(true);
         console.log('✅ User loaded from storage:', user.username);
-        console.log('   Sujet de thèse:', user.titreThese || user.sujetThese || 'Non défini');
       } catch (e) {
         console.error('Error parsing user from storage', e);
         this.logout();
@@ -105,9 +96,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Connexion
-   */
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/login`, credentials).pipe(
         tap(response => {
@@ -115,8 +103,6 @@ export class AuthService {
             this.saveTokens(response);
             this.saveUser(response);
             console.log('✅ Login successful:', response.username);
-            console.log('   Role:', response.role);
-            console.log('   Sujet de thèse:', response.titreThese || 'Non défini');
           }
         }),
         catchError(error => {
@@ -126,9 +112,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Inscription simple (JSON)
-   */
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/register`, request).pipe(
         tap(response => {
@@ -143,9 +126,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Inscription avec fichiers (multipart)
-   */
   registerWithFiles(formData: FormData): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/register-with-files`, formData).pipe(
         tap(response => {
@@ -160,30 +140,50 @@ export class AuthService {
     );
   }
 
-  /**
-   * Déconnexion
-   */
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    this.router.navigate(['/auth/login']);
+    // ✅ CORRIGÉ: Redirige vers /login au lieu de /auth/login
+    this.router.navigate(['/login']);
   }
 
-  /**
-   * Récupère le token d'accès
-   */
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  /**
-   * Vérifie si l'utilisateur est authentifié
-   */
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  // =====================================================
+  // HELPERS DE RÔLES (AJOUTÉS)
+  // =====================================================
+
+  /**
+   * Vérifie si l'utilisateur connecté est un admin
+   */
+  isAdmin(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'ADMIN';
+  }
+
+  /**
+   * Vérifie si l'utilisateur connecté est un directeur de thèse
+   */
+  isDirecteur(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'DIRECTEUR_THESE' || user?.role === 'DIRECTEUR';
+  }
+
+  /**
+   * Vérifie si l'utilisateur connecté est un doctorant/candidat
+   */
+  isDoctorant(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'DOCTORANT' || user?.role === 'CANDIDAT';
   }
 
   /**
@@ -202,27 +202,23 @@ export class AuthService {
     return user ? roles.includes(user.role) : false;
   }
 
-  /**
-   * Récupère le profil utilisateur depuis le serveur
-   */
+  // =====================================================
+  // PROFIL
+  // =====================================================
+
   getProfile(): Observable<User> {
     return this.http.get<User>(`${this.API_URL}/me`).pipe(
         tap(user => {
-          // Mettre à jour le user local avec les données fraîches
           const currentUser = this.currentUser();
           if (currentUser) {
             const updatedUser = { ...currentUser, ...user };
             this.currentUser.set(updatedUser);
             localStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
-            console.log('✅ Profile refreshed, titreThese:', updatedUser.titreThese);
           }
         })
     );
   }
 
-  /**
-   * Rafraîchit le token
-   */
   refreshToken(): Observable<AuthResponse> {
     const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
     return this.http.post<AuthResponse>(`${this.API_URL}/refresh`, { refreshToken }).pipe(
@@ -235,9 +231,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Sauvegarde les tokens
-   */
   private saveTokens(response: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.accessToken);
     if (response.refreshToken) {
@@ -246,26 +239,27 @@ export class AuthService {
   }
 
   /**
-   * ✅ Met à jour les données utilisateur dans le storage (appelé après refresh du profil)
+   * Met à jour les données utilisateur (appelé par le dashboard après refresh depuis la DB)
+   * Permet de synchroniser les prérequis modifiés par l'admin
    */
-  updateUserStorage(updatedUser: Partial<User>): void {
+  updateCurrentUser(updatedUser: Partial<User>): void {
     const currentUser = this.currentUser();
     if (currentUser) {
       const merged: User = {
         ...currentUser,
         ...updatedUser,
-        // S'assurer que sujetThese est aussi mis à jour si titreThese change
         sujetThese: updatedUser.titreThese || updatedUser.sujetThese || currentUser.sujetThese
       };
       localStorage.setItem(this.USER_KEY, JSON.stringify(merged));
       this.currentUser.set(merged);
-      console.log('✅ User storage updated:', merged.username);
+      console.log('✅ Current user updated with fresh data');
     }
   }
 
-  /**
-   * Sauvegarde l'utilisateur dans le localStorage et le signal
-   */
+  updateUserStorage(updatedUser: Partial<User>): void {
+    this.updateCurrentUser(updatedUser);
+  }
+
   private saveUser(response: AuthResponse): void {
     const user: User = {
       id: response.userId,
@@ -278,10 +272,8 @@ export class AuthService {
       etat: response.etat,
       motifRefus: response.motifRefus,
       directeurId: response.directeurId,
-      // ✅ Sujet de thèse - stocker les deux noms pour compatibilité
       titreThese: response.titreThese,
-      sujetThese: response.titreThese, // Alias pour le frontend
-      // Suivi doctorant
+      sujetThese: response.titreThese,
       anneeThese: response.anneeThese,
       nbPublications: response.nbPublications,
       nbConferences: response.nbConferences,
@@ -291,8 +283,5 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this.currentUser.set(user);
     this.isAuthenticated.set(true);
-
-    console.log('✅ User saved:', user.username);
-    console.log('   titreThese:', user.titreThese);
   }
 }

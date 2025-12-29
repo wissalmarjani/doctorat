@@ -2,38 +2,40 @@ package ma.enset.inscriptionservice.services;
 
 import ma.enset.inscriptionservice.entities.Inscription;
 import ma.enset.inscriptionservice.enums.StatutInscription;
+import ma.enset.inscriptionservice.enums.TypeInscription;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface InscriptionService {
 
-    Inscription createInscription(Inscription inscription);
+    // CRUD
+    Inscription create(Inscription inscription);
+    Inscription update(Long id, Inscription inscription);
+    void delete(Long id);
+    Optional<Inscription> getById(Long id);
+    List<Inscription> getAll();
 
-    Inscription updateInscription(Long id, Inscription inscription);
+    // Requêtes spécifiques
+    List<Inscription> getByDoctorant(Long doctorantId);
+    List<Inscription> getByDirecteur(Long directeurId);
+    List<Inscription> getByStatut(StatutInscription statut);
+    List<Inscription> getByCampagne(Long campagneId);
+    List<Inscription> getByTypeInscription(TypeInscription type);
 
-    void deleteInscription(Long id);
+    // Workflow - Soumission
+    Inscription soumettre(Long id);
 
-    Optional<Inscription> getInscriptionById(Long id);
-
-    List<Inscription> getAllInscriptions();
-
-    List<Inscription> getInscriptionsByDoctorant(Long doctorantId);
-
-    List<Inscription> getInscriptionsByDirecteur(Long directeurId);
-
-    List<Inscription> getInscriptionsByStatut(StatutInscription statut);
-
-    Inscription changerStatut(Long id, StatutInscription nouveauStatut, String commentaire);
-
+    // Workflow - Validation Directeur
     Inscription validerParDirecteur(Long id, String commentaire);
+    Inscription rejeterParDirecteur(Long id, String motif);
 
+    // Workflow - Validation Admin
     Inscription validerParAdmin(Long id, String commentaire);
+    Inscription rejeterParAdmin(Long id, String motif);
 
-    Inscription rejeterParDirecteur(Long id, String commentaire);
-
-    Inscription rejeterParAdmin(Long id, String commentaire);
-
-    // ✅ INDISPENSABLE POUR QUE LE CONTRÔLEUR FONCTIONNE
-    Inscription soumettreInscription(Long id);
+    // Requêtes spéciales pour le workflow
+    List<Inscription> getReinscritionsEnAttenteDirecteur(Long directeurId);
+    List<Inscription> getReinscritionsEnAttenteAdmin();
+    List<Inscription> getPremieresInscriptionsEnAttenteAdmin();
 }

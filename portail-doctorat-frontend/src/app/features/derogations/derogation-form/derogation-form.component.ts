@@ -49,12 +49,36 @@ import { TypeDerogation } from '@core/models/derogation.model';
           </div>
         </div>
 
+        <!-- Workflow Info Banner -->
+        <div class="workflow-banner">
+          <div class="workflow-title">
+            <i class="bi bi-diagram-3"></i>
+            <strong>Processus de validation</strong>
+          </div>
+          <div class="workflow-steps">
+            <div class="wf-step">
+              <div class="wf-num">1</div>
+              <span>Soumission</span>
+            </div>
+            <div class="wf-arrow"><i class="bi bi-arrow-right"></i></div>
+            <div class="wf-step">
+              <div class="wf-num">2</div>
+              <span>Directeur</span>
+            </div>
+            <div class="wf-arrow"><i class="bi bi-arrow-right"></i></div>
+            <div class="wf-step">
+              <div class="wf-num">3</div>
+              <span>Administration</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Info Banner -->
         <div class="info-banner">
           <i class="bi bi-info-circle"></i>
           <div>
             <strong>À propos des dérogations</strong>
-            <p>La durée normale de thèse est de 3 ans. Au-delà, une dérogation est nécessaire pour chaque année supplémentaire (maximum 6 ans au total).</p>
+            <p>La durée normale de thèse est de 3 ans. Au-delà, une dérogation est nécessaire pour chaque année supplémentaire (maximum 6 ans au total). Votre demande sera d'abord validée par votre directeur de thèse, puis par l'administration.</p>
           </div>
         </div>
 
@@ -67,7 +91,7 @@ import { TypeDerogation } from '@core/models/derogation.model';
 
           <form [formGroup]="derogationForm" (ngSubmit)="onSubmit()" class="card-body">
 
-            <!-- Type de dérogation - TOUTES LES OPTIONS VISIBLES -->
+            <!-- Type de dérogation -->
             <div class="form-group">
               <label class="form-label">
                 <i class="bi bi-tag"></i>
@@ -109,7 +133,7 @@ import { TypeDerogation } from '@core/models/derogation.model';
               <i class="bi bi-lightbulb"></i>
               <div>
                 <strong>Information</strong>
-                <p>Votre demande sera examinée par le responsable du CEDoc. Vous serez notifié par email de la décision.</p>
+                <p>Votre demande sera d'abord examinée par votre directeur de thèse, puis transmise à l'administration du CEDoc. Vous serez notifié par email à chaque étape.</p>
               </div>
             </div>
 
@@ -150,7 +174,7 @@ import { TypeDerogation } from '@core/models/derogation.model';
     .hero-title { margin: 0; font-size: 1.5rem; font-weight: 800; }
     .hero-subtitle { margin: 0.25rem 0 0; opacity: 0.9; }
 
-    .year-info-card { display: flex; align-items: center; justify-content: space-between; background: white; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .year-info-card { display: flex; align-items: center; justify-content: space-between; background: white; border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
     .year-badge { display: flex; align-items: center; gap: 1rem; }
     .year-badge > i { font-size: 2rem; color: #f59e0b; }
     .year-content { display: flex; flex-direction: column; }
@@ -160,6 +184,16 @@ import { TypeDerogation } from '@core/models/derogation.model';
     .status-chip.success { background: #dcfce7; color: #15803d; }
     .status-chip.warning { background: #fef3c7; color: #b45309; }
     .status-chip.danger { background: #fee2e2; color: #dc2626; }
+
+    /* Workflow Banner */
+    .workflow-banner { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+    .workflow-title { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: #1e293b; font-size: 0.9rem; }
+    .workflow-title i { color: #f59e0b; }
+    .workflow-steps { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .wf-step { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .wf-num { width: 32px; height: 32px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .wf-step span { font-size: 0.8rem; color: #64748b; font-weight: 500; }
+    .wf-arrow { color: #cbd5e1; font-size: 1.25rem; }
 
     .info-banner { display: flex; gap: 1rem; padding: 1rem 1.25rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; margin-bottom: 1.5rem; color: #1e40af; }
     .info-banner i { font-size: 1.25rem; flex-shrink: 0; }
@@ -186,6 +220,14 @@ import { TypeDerogation } from '@core/models/derogation.model';
     .hint { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
     .error-text { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: #ef4444; margin-top: 0.4rem; }
 
+    /* Directeur Info */
+    .directeur-info { display: flex; gap: 1rem; padding: 1rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; margin-bottom: 1.5rem; }
+    .directeur-info i { font-size: 1.5rem; color: #22c55e; }
+    .directeur-info div { display: flex; flex-direction: column; }
+    .directeur-info strong { font-size: 0.8rem; color: #166534; margin-bottom: 0.15rem; }
+    .directeur-info span { font-size: 0.95rem; color: #15803d; font-weight: 600; }
+    .directeur-info small { font-size: 0.75rem; color: #22c55e; margin-top: 0.25rem; }
+
     .info-box { display: flex; gap: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 10px; margin-bottom: 1.5rem; }
     .info-box i { color: #f59e0b; font-size: 1.1rem; }
     .info-box strong { display: block; font-size: 0.85rem; color: #92400e; margin-bottom: 0.15rem; }
@@ -208,6 +250,7 @@ import { TypeDerogation } from '@core/models/derogation.model';
       .year-info-card { flex-direction: column; gap: 1rem; align-items: flex-start; }
       .form-actions { flex-direction: column; }
       .btn-cancel { order: 2; }
+      .workflow-steps { flex-wrap: wrap; }
     }
   `]
 })
@@ -231,7 +274,11 @@ export class DerogationFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.currentYear = this.authService.currentUser()?.anneeThese || 1;
+    const user = this.authService.currentUser();
+    this.currentYear = user?.anneeThese || 1;
+
+    // Le nom du directeur sera affiché si disponible dans le profil utilisateur
+    // Pour l'instant, on ne l'affiche pas si la propriété n'existe pas
   }
 
   getYearSuffix(): string {
@@ -247,21 +294,22 @@ export class DerogationFormComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    const userId = this.authService.currentUser()?.id;
+    const user = this.authService.currentUser();
     const request = {
-      doctorantId: userId!,
+      doctorantId: user?.id!,
+      // directeurId sera récupéré côté backend si non fourni
       typeDerogation: this.derogationForm.value.typeDerogation as TypeDerogation,
       motif: this.derogationForm.value.motif
     };
 
     this.derogationService.demanderDerogation(request).subscribe({
       next: () => {
-        this.successMessage.set('Votre demande a été soumise avec succès !');
+        this.successMessage.set('Votre demande a été soumise avec succès ! Elle sera examinée par votre directeur de thèse.');
         this.isLoading.set(false);
-        setTimeout(() => this.router.navigate(['/derogations']), 2000);
+        setTimeout(() => this.router.navigate(['/derogations']), 2500);
       },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Erreur lors de la soumission');
+      error: (err: any) => {
+        this.errorMessage.set(err.error?.error || err.error?.message || 'Erreur lors de la soumission');
         this.isLoading.set(false);
       }
     });

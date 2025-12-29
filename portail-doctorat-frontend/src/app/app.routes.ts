@@ -1,91 +1,140 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { roleGuard } from './core/guards/role.guard';
-import { inscriptionCompleteGuard } from './core/guards/inscription-complete.guard';
 
 export const routes: Routes = [
-  // Redirection par défaut
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // ============================================
+  // PAGES PUBLIQUES (Sans AuthGuard)
+  // ============================================
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
 
-  // Auth
-  { path: 'auth', loadChildren: () => import('./features/auth/auth.routes').then(m => m.AUTH_ROUTES) },
-
-  // Page d'attente
   {
-    path: 'auth/pending-approval',
-    loadComponent: () => import('./features/auth/pending-approval/pending-approval.component')
-        .then(m => m.PendingApprovalComponent)
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
+  },
+  {
+    path: 'pending-approval',
+    loadComponent: () => import('./features/auth/pending-approval/pending-approval.component').then(m => m.PendingApprovalComponent)
   },
 
-  // --- DASHBOARD (Commun à tous les utilisateurs authentifiés) ---
+  // ============================================
+  // DASHBOARD & PROFIL (Commun)
+  // ============================================
   {
     path: 'dashboard',
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard, inscriptionCompleteGuard]
-  },
-
-  // --- INSCRIPTIONS ---
-  {
-    path: 'inscriptions',
-    loadChildren: () => import('./features/inscriptions/inscriptions.routes').then(m => m.INSCRIPTIONS_ROUTES),
     canActivate: [authGuard]
   },
-
-  // --- PROFIL (Commun à tous les utilisateurs authentifiés) ---
   {
     path: 'profil',
     loadComponent: () => import('./features/profil/profil.component').then(m => m.ProfilComponent),
     canActivate: [authGuard]
   },
 
-  // --- ESPACE DOCTORANT (nécessite inscription complète) ---
+  // ============================================
+  // DOCTORANT
+  // ============================================
   {
-    path: 'soutenances',
-    loadChildren: () => import('./features/soutenances/soutenances.routes').then(m => m.SOUTENANCES_ROUTES),
-    canActivate: [authGuard, inscriptionCompleteGuard]
+    path: 'inscriptions',
+    loadComponent: () => import('./features/inscriptions/inscription-list/inscription-list.component').then(m => m.InscriptionListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'inscriptions/nouvelle',
+    loadComponent: () => import('./features/inscriptions/inscription-form/inscription-form.component').then(m => m.InscriptionFormComponent),
+    canActivate: [authGuard]
   },
   {
     path: 'derogations',
-    loadChildren: () => import('./features/derogations/derogations.routes').then(m => m.DEROGATIONS_ROUTES),
-    canActivate: [authGuard, inscriptionCompleteGuard]
+    loadComponent: () => import('./features/derogations/derogation-list/derogation-list.component').then(m => m.DerogationListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'derogations/nouvelle',
+    loadComponent: () => import('./features/derogations/derogation-form/derogation-form.component').then(m => m.DerogationFormComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'soutenances',
+    loadChildren: () => import('./features/soutenances/soutenances.routes').then(m => m.SOUTENANCES_ROUTES),
+    canActivate: [authGuard]
   },
 
-  // --- ESPACE DIRECTEUR DE THÈSE ---
+  // ============================================
+  // DIRECTEUR DE THÈSE
+  // ============================================
+  // 1. Validation des nouvelles candidatures
   {
     path: 'validations',
-    loadComponent: () => import('./features/directeur/validation/director-validation.component')
-        .then(m => m.DirectorValidationComponent),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['DIRECTEUR_THESE'] }
+    loadComponent: () => import('./features/directeur/validation/director-validation.component').then(m => m.DirectorValidationComponent),
+    canActivate: [authGuard]
   },
-  // ❌ SUPPRIMÉ: /my-students (non conforme au CDC)
+  // 2. Réinscriptions
+  {
+    path: 'director/reinscriptions',
+    loadComponent: () => import('./features/directeur/reinscriptions/directeur-reinscriptions.component').then(m => m.DirecteurReinscriptionsComponent),
+    canActivate: [authGuard]
+  },
+  // 3. Dérogations
+  {
+    path: 'director/derogations',
+    loadComponent: () => import('./features/directeur/derogations/director-derogations.component').then(m => m.DirectorDerogationsComponent),
+    canActivate: [authGuard]
+  },
+  // 4. Soutenances
   {
     path: 'director/soutenances',
-    loadComponent: () => import('./features/directeur/soutenances/director-soutenance.component')
-        .then(m => m.DirectorSoutenanceComponent),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['DIRECTEUR_THESE'] }
+    loadComponent: () => import('./features/directeur/soutenances/director-soutenance.component').then(m => m.DirectorSoutenanceComponent),
+    canActivate: [authGuard]
   },
 
-  // --- ESPACE ADMIN ---
+  // ============================================
+  // ADMIN
+  // ============================================
   {
-    path: 'admin',
-    loadChildren: () => import('./features/admin/admin.routes').then(m => m.ADMIN_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] }
+    path: 'admin/campagnes',
+    loadComponent: () => import('./features/campagnes/campagne-list/campagne-list.component').then(m => m.CampagneListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/campagnes/nouvelle',
+    loadComponent: () => import('./features/campagnes/campagne-form/campagne-form.component').then(m => m.CampagneFormComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/campagnes/modifier/:id',
+    loadComponent: () => import('./features/campagnes/campagne-form/campagne-form.component').then(m => m.CampagneFormComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/reinscriptions',
+    loadComponent: () => import('./features/admin/reinscriptions/admin-reinscriptions.component').then(m => m.AdminReinscriptionsComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/derogations',
+    loadComponent: () => import('./features/admin/derogation-management/derogation-management.component').then(m => m.DerogationManagementComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/soutenances',
+    loadComponent: () => import('./features/admin/soutenance-list/soutenance-list.component').then(m => m.SoutenanceListComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/soutenances/:id',
+    loadComponent: () => import('./features/admin/soutenance-detail/soutenance-detail.component').then(m => m.SoutenanceDetailComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'admin/users',
+    loadComponent: () => import('./features/admin/user-management/user-management.component').then(m => m.UserManagementComponent),
+    canActivate: [authGuard]
   },
 
-  // --- ESPACE GESTION CAMPAGNES ---
-  {
-    path: 'campagnes',
-    loadChildren: () => import('./features/campagnes/campagnes.routes').then(m => m.CAMPAGNES_ROUTES),
-    canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'RESPONSABLE_CEDOC'] }
-  },
-
-  // --- 404 ---
-  {
-    path: '**',
-    loadComponent: () => import('./shared/components/not-found/not-found.component').then(m => m.NotFoundComponent)
-  }
+  // Catch-all (Redirection si page inconnue)
+  { path: '**', redirectTo: '/dashboard' }
 ];

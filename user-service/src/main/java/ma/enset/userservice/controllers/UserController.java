@@ -144,6 +144,22 @@ public class UserController {
     }
 
     // ========================================================
+    // GESTION DIRECTEUR - DOCTORANTS
+    // ========================================================
+
+    /**
+     * ✅ NOUVEAU: Récupérer tous les doctorants d'un directeur
+     * GET /api/users/directeur/{directeurId}/doctorants
+     */
+    @GetMapping("/directeur/{directeurId}/doctorants")
+    public ResponseEntity<List<UserDTO>> getDoctorantsByDirecteur(@PathVariable Long directeurId) {
+        log.info("📋 Récupération des doctorants du directeur: {}", directeurId);
+        List<UserDTO> doctorants = userService.getDoctorantsByDirecteur(directeurId);
+        log.info("✅ {} doctorants trouvés pour le directeur {}", doctorants.size(), directeurId);
+        return ResponseEntity.ok(doctorants);
+    }
+
+    // ========================================================
     // AUTRES ENDPOINTS
     // ========================================================
 

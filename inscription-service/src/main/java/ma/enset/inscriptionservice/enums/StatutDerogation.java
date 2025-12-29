@@ -1,23 +1,11 @@
 package ma.enset.inscriptionservice.enums;
 
-/**
- * Statuts possibles d'une demande de dérogation
- */
 public enum StatutDerogation {
-    
-    EN_ATTENTE("En attente de décision"),
-    APPROUVEE("Approuvée"),
-    REFUSEE("Refusée"),
-    EXPIREE("Expirée"),
-    ANNULEE("Annulée");
-
-    private final String libelle;
-
-    StatutDerogation(String libelle) {
-        this.libelle = libelle;
-    }
-
-    public String getLibelle() {
-        return libelle;
-    }
+    EN_ATTENTE_DIRECTEUR,   // Étape 1: En attente validation directeur
+    EN_ATTENTE_ADMIN,       // Étape 2: Validé par directeur, en attente admin
+    EN_ATTENTE,             // Legacy - pour compatibilité
+    APPROUVEE,              // Approuvée par admin
+    REFUSEE,                // Refusée (par directeur ou admin)
+    EXPIREE,                // Dérogation expirée
+    ANNULEE                 // Annulée par le doctorant
 }

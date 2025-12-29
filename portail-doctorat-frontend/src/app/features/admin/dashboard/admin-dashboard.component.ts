@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { MainLayoutComponent } from '@shared/components/main-layout/main-layout.component';
 import { UserService } from '@core/services/user.service';
 import { InscriptionService } from '@core/services/inscription.service';
-import { StatutInscription } from '@core/models/inscription.model';
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -20,15 +19,14 @@ import { StatutInscription } from '@core/models/inscription.model';
                         <p class="text-muted mb-0">État actuel du système.</p>
                     </div>
                     <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-            <i class="bi bi-calendar3 me-2"></i> {{ today | date:'fullDate' }}
-          </span>
+                        <i class="bi bi-calendar3 me-2"></i> {{ today | date:'fullDate' }}
+                    </span>
                 </div>
 
                 <!-- GRILLE DE STATISTIQUES -->
                 <div class="row g-4">
 
                     <!-- 1. COMPTES CANDIDATS (Orange) -->
-                    <!-- Ce sont les gens inscrits sur la plateforme mais qui n'ont pas forcément encore soumis de dossier -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-orange-subtle text-orange">
@@ -42,7 +40,6 @@ import { StatutInscription } from '@core/models/inscription.model';
                     </div>
 
                     <!-- 2. DOCTORANTS INSCRITS (Cyan) -->
-                    <!-- Ceux qui ont fini tout le processus (ADMIS) -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-cyan-subtle text-cyan">
@@ -69,7 +66,6 @@ import { StatutInscription } from '@core/models/inscription.model';
                     </div>
 
                     <!-- 4. DOSSIERS A VALIDER (Violet) -->
-                    <!-- Le plus important pour l'admin : les dossiers EN_ATTENTE_ADMIN -->
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="info-card">
                             <div class="icon-box bg-purple-subtle text-purple">
@@ -154,9 +150,8 @@ export class AdminDashboardComponent implements OnInit {
             this.stats.update(s => ({ ...s, doctorants: u.length }))
         );
 
-        // 4. Dossiers à valider par l'admin
-        // ✅ CORRECTION ICI : On utilise EN_ATTENTE_ADMIN
-        this.inscriptionService.getByStatut(StatutInscription.EN_ATTENTE_ADMIN.toString()).subscribe(i =>
+        // 4. Dossiers à valider par l'admin - utiliser la string directement
+        this.inscriptionService.getByStatut('EN_ATTENTE_ADMIN').subscribe(i =>
             this.stats.update(s => ({ ...s, inscriptions: i.length }))
         );
     }

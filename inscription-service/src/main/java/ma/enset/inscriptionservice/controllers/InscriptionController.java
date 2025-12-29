@@ -5,167 +5,208 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.inscriptionservice.entities.Inscription;
 import ma.enset.inscriptionservice.enums.StatutInscription;
+import ma.enset.inscriptionservice.enums.TypeInscription;
 import ma.enset.inscriptionservice.services.InscriptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inscriptions")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // À configurer plus finement en prod (Gateway)
+@CrossOrigin(origins = "*")
 public class InscriptionController {
 
     private final InscriptionService inscriptionService;
 
+    // =============================================================
+    // CRUD
+    // =============================================================
+
     @PostMapping
-    public ResponseEntity<Inscription> createInscription(@Valid @RequestBody Inscription inscription) {
-        log.info("REST request to create inscription for doctorant: {}", inscription.getDoctorantId());
-        Inscription created = inscriptionService.createInscription(inscription);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<Inscription> create(@Valid @RequestBody Inscription inscription) {
+        log.info("REST request to create inscription");
+        return ResponseEntity.status(HttpStatus.CREATED).body(inscriptionService.create(inscription));
     }
 
     @GetMapping
-    public ResponseEntity<List<Inscription>> getAllInscriptions() {
-        log.info("REST request to get all inscriptions");
-        List<Inscription> inscriptions = inscriptionService.getAllInscriptions();
-        return ResponseEntity.ok(inscriptions);
+    public ResponseEntity<List<Inscription>> getAll() {
+        return ResponseEntity.ok(inscriptionService.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Inscription> getInscriptionById(@PathVariable Long id) {
-        log.info("REST request to get inscription by id: {}", id);
-        return inscriptionService.getInscriptionById(id)
+    public ResponseEntity<Inscription> getById(@PathVariable Long id) {
+        return inscriptionService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/doctorant/{doctorantId}")
-    public ResponseEntity<List<Inscription>> getInscriptionsByDoctorant(@PathVariable Long doctorantId) {
-        log.info("REST request to get inscriptions by doctorant: {}", doctorantId);
-        List<Inscription> inscriptions = inscriptionService.getInscriptionsByDoctorant(doctorantId);
-        return ResponseEntity.ok(inscriptions);
-    }
-
-    /**
-     * ✅ NOUVEL ENDPOINT CRUCIAL POUR LE FRONTEND (GUARD)
-     * Récupère la dernière inscription (la plus récente) d'un doctorant.
-     * Utilise l'ID auto-incrémenté pour déterminer la récence.
-     */
-    @GetMapping("/doctorant/{doctorantId}/latest")
-    public ResponseEntity<Inscription> getLatestInscriptionByDoctorant(@PathVariable Long doctorantId) {
-        log.info("REST request to get LATEST inscription for doctorant: {}", doctorantId);
-
-        // 1. On récupère toutes les inscriptions du doctorant
-        List<Inscription> inscriptions = inscriptionService.getInscriptionsByDoctorant(doctorantId);
-
-        // 2. On cherche celle avec l'ID le plus grand (la plus récente)
-        // Si la liste est vide, on renvoie 404 (ce qui déclenchera la redirection vers le formulaire coté Angular)
-        return inscriptions.stream()
-                .max(Comparator.comparing(Inscription::getId))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/directeur/{directeurId}")
-    public ResponseEntity<List<Inscription>> getInscriptionsByDirecteur(@PathVariable Long directeurId) {
-        log.info("REST request to get inscriptions by directeur: {}", directeurId);
-        List<Inscription> inscriptions = inscriptionService.getInscriptionsByDirecteur(directeurId);
-        return ResponseEntity.ok(inscriptions);
-    }
-
-    @GetMapping("/statut/{statut}")
-    public ResponseEntity<List<Inscription>> getInscriptionsByStatut(@PathVariable StatutInscription statut) {
-        log.info("REST request to get inscriptions by statut: {}", statut);
-        List<Inscription> inscriptions = inscriptionService.getInscriptionsByStatut(statut);
-        return ResponseEntity.ok(inscriptions);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Inscription> updateInscription(@PathVariable Long id, @Valid @RequestBody Inscription inscription) {
-        log.info("REST request to update inscription with id: {}", id);
+    public ResponseEntity<Inscription> update(@PathVariable Long id, @RequestBody Inscription inscription) {
         try {
-            Inscription updated = inscriptionService.updateInscription(id, inscription);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(inscriptionService.update(id, inscription));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @PutMapping("/{id}/valider-directeur")
-    public ResponseEntity<Inscription> validerParDirecteur(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to validate inscription {} by directeur", id);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        inscriptionService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // =============================================================
+    // REQUÊTES SPÉCIFIQUES
+    // =============================================================
+
+    @GetMapping("/doctorant/{doctorantId}")
+    public ResponseEntity<List<Inscription>> getByDoctorant(@PathVariable Long doctorantId) {
+        return ResponseEntity.ok(inscriptionService.getByDoctorant(doctorantId));
+    }
+
+    @GetMapping("/directeur/{directeurId}")
+    public ResponseEntity<List<Inscription>> getByDirecteur(@PathVariable Long directeurId) {
+        return ResponseEntity.ok(inscriptionService.getByDirecteur(directeurId));
+    }
+
+    @GetMapping("/statut/{statut}")
+    public ResponseEntity<List<Inscription>> getByStatut(@PathVariable String statut) {
         try {
-            String commentaire = body.get("commentaire");
-            Inscription validated = inscriptionService.validerParDirecteur(id, commentaire);
-            return ResponseEntity.ok(validated);
-        } catch (RuntimeException e) {
+            StatutInscription statutEnum = StatutInscription.valueOf(statut);
+            return ResponseEntity.ok(inscriptionService.getByStatut(statutEnum));
+        } catch (IllegalArgumentException e) {
+            log.error("Statut invalide: {}", statut);
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @PutMapping("/{id}/valider-admin")
-    public ResponseEntity<Inscription> validerParAdmin(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to validate inscription {} by admin", id);
+    @GetMapping("/campagne/{campagneId}")
+    public ResponseEntity<List<Inscription>> getByCampagne(@PathVariable Long campagneId) {
+        return ResponseEntity.ok(inscriptionService.getByCampagne(campagneId));
+    }
+
+    @GetMapping("/type/{type}")
+    public ResponseEntity<List<Inscription>> getByType(@PathVariable String type) {
         try {
-            String commentaire = body.get("commentaire");
-            Inscription validated = inscriptionService.validerParAdmin(id, commentaire);
-            return ResponseEntity.ok(validated);
+            TypeInscription typeEnum = TypeInscription.valueOf(type);
+            return ResponseEntity.ok(inscriptionService.getByTypeInscription(typeEnum));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // =============================================================
+    // WORKFLOW - SOUMISSION
+    // =============================================================
+
+    @PutMapping("/{id}/soumettre")
+    public ResponseEntity<Inscription> soumettre(@PathVariable Long id) {
+        log.info("📤 Soumission inscription {}", id);
+        try {
+            return ResponseEntity.ok(inscriptionService.soumettre(id));
         } catch (RuntimeException e) {
+            log.error("❌ Erreur soumission: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // =============================================================
+    // WORKFLOW - VALIDATION DIRECTEUR
+    // =============================================================
+
+    @PutMapping("/{id}/valider-directeur")
+    public ResponseEntity<Inscription> validerParDirecteur(
+            @PathVariable Long id,
+            @RequestParam(required = false) String commentaire) {
+        log.info("✅ Validation directeur inscription {}", id);
+        try {
+            return ResponseEntity.ok(inscriptionService.validerParDirecteur(id, commentaire));
+        } catch (RuntimeException e) {
+            log.error("❌ Erreur validation directeur: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PutMapping("/{id}/rejeter-directeur")
-    public ResponseEntity<Inscription> rejeterParDirecteur(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to reject inscription {} by directeur", id);
+    public ResponseEntity<Inscription> rejeterParDirecteur(
+            @PathVariable Long id,
+            @RequestParam String motif) {
+        log.info("❌ Rejet directeur inscription {}", id);
         try {
-            String commentaire = body.get("commentaire");
-            Inscription rejected = inscriptionService.rejeterParDirecteur(id, commentaire);
-            return ResponseEntity.ok(rejected);
+            return ResponseEntity.ok(inscriptionService.rejeterParDirecteur(id, motif));
         } catch (RuntimeException e) {
+            log.error("❌ Erreur rejet directeur: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // =============================================================
+    // WORKFLOW - VALIDATION ADMIN
+    // =============================================================
+
+    @PutMapping("/{id}/valider-admin")
+    public ResponseEntity<Inscription> validerParAdmin(
+            @PathVariable Long id,
+            @RequestParam(required = false) String commentaire) {
+        log.info("✅ Validation admin inscription {}", id);
+        try {
+            return ResponseEntity.ok(inscriptionService.validerParAdmin(id, commentaire));
+        } catch (RuntimeException e) {
+            log.error("❌ Erreur validation admin: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PutMapping("/{id}/rejeter-admin")
-    public ResponseEntity<Inscription> rejeterParAdmin(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        log.info("REST request to reject inscription {} by admin", id);
+    public ResponseEntity<Inscription> rejeterParAdmin(
+            @PathVariable Long id,
+            @RequestParam String motif) {
+        log.info("❌ Rejet admin inscription {}", id);
         try {
-            String commentaire = body.get("commentaire");
-            Inscription rejected = inscriptionService.rejeterParAdmin(id, commentaire);
-            return ResponseEntity.ok(rejected);
+            return ResponseEntity.ok(inscriptionService.rejeterParAdmin(id, motif));
         } catch (RuntimeException e) {
+            log.error("❌ Erreur rejet admin: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteInscription(@PathVariable Long id) {
-        log.info("REST request to delete inscription with id: {}", id);
-        inscriptionService.deleteInscription(id);
-        return ResponseEntity.noContent().build();
+    // =============================================================
+    // ENDPOINTS SPÉCIAUX POUR DIRECTEUR ET ADMIN
+    // =============================================================
+
+    /**
+     * Réinscriptions en attente de validation par un directeur spécifique
+     */
+    @GetMapping("/directeur/{directeurId}/reinscriptions-en-attente")
+    public ResponseEntity<List<Inscription>> getReinscritionsEnAttenteDirecteur(@PathVariable Long directeurId) {
+        log.info("📋 Récupération réinscriptions en attente pour directeur {}", directeurId);
+        return ResponseEntity.ok(inscriptionService.getReinscritionsEnAttenteDirecteur(directeurId));
+    }
+
+    /**
+     * Réinscriptions en attente de validation admin (après validation directeur)
+     */
+    @GetMapping("/admin/reinscriptions-en-attente")
+    public ResponseEntity<List<Inscription>> getReinscritionsEnAttenteAdmin() {
+        log.info("📋 Récupération réinscriptions en attente pour admin");
+        return ResponseEntity.ok(inscriptionService.getReinscritionsEnAttenteAdmin());
+    }
+
+    /**
+     * Premières inscriptions en attente de validation admin
+     */
+    @GetMapping("/admin/premieres-inscriptions-en-attente")
+    public ResponseEntity<List<Inscription>> getPremieresInscriptionsEnAttenteAdmin() {
+        log.info("📋 Récupération premières inscriptions en attente pour admin");
+        return ResponseEntity.ok(inscriptionService.getPremieresInscriptionsEnAttenteAdmin());
     }
 
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("Inscription Service is running!");
-    }
-
-    @PutMapping("/{id}/soumettre")
-    public ResponseEntity<Inscription> soumettreInscription(@PathVariable Long id) {
-        log.info("REST request to submit (soumettre) inscription with id: {}", id);
-        try {
-            Inscription submitted = inscriptionService.soumettreInscription(id);
-            return ResponseEntity.ok(submitted);
-        } catch (RuntimeException e) {
-            log.error("Erreur lors de la soumission: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
     }
 }

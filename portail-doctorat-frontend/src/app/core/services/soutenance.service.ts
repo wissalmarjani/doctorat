@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 })
 export class SoutenanceService {
 
+    // ✅ CORRIGÉ: environment.soutenanceServiceUrl contient déjà /api
     private baseUrl = `${environment.soutenanceServiceUrl}/soutenances`;
 
     constructor(private http: HttpClient) {
@@ -93,6 +94,25 @@ export class SoutenanceService {
 
     proposerJury(soutenanceId: number): Observable<any> {
         return this.http.put<any>(`${this.baseUrl}/${soutenanceId}/proposer-jury`, {});
+    }
+
+    // =====================================================
+    // MEMBRES JURY DISPONIBLES (pour sélection dropdown)
+    // =====================================================
+
+    /**
+     * Récupérer tous les membres du jury disponibles (non assignés)
+     */
+    getMembresJuryDisponibles(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/jury/disponibles`);
+    }
+
+    /**
+     * Récupérer les membres du jury disponibles par rôle
+     * @param role - PRESIDENT, RAPPORTEUR, EXAMINATEUR, INVITE
+     */
+    getMembresJuryByRole(role: string): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/jury/disponibles/${role}`);
     }
 
     // =====================================================

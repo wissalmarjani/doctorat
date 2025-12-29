@@ -1,5 +1,6 @@
 package ma.enset.userservice.services;
 
+import ma.enset.userservice.dto.UserDTO;
 import ma.enset.userservice.entities.User;
 import ma.enset.userservice.enums.Role;
 
@@ -33,9 +34,9 @@ public interface UserService {
 
     // Workflow Directeur
     User validerCandidatureDirecteur(Long id);
-
-    // ✅ NOUVEAU : Validation directeur AVEC sujet de thèse
     User validerCandidatureDirecteurAvecSujet(Long id, String sujetThese);
-
     User refuserCandidatureDirecteur(Long id, String motif);
+
+    // ✅ NOUVEAU : Récupérer les doctorants d'un directeur
+    List<UserDTO> getDoctorantsByDirecteur(Long directeurId);
 }

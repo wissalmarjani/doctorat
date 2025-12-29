@@ -9,6 +9,7 @@ import { User, EtatCandidature } from '../models/user.model';
 })
 export class UserService {
 
+    // ✅ CORRIGÉ: environment.userServiceUrl contient déjà /api
     private baseUrl = `${environment.userServiceUrl}/users`;
 
     constructor(private http: HttpClient) {

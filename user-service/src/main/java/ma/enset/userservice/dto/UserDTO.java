@@ -21,7 +21,7 @@ public class UserDTO {
     private String prenom;
     private String telephone;
     private String role;
-    private Boolean enabled;  // ✅ Ajouté
+    private Boolean enabled;
 
     // Documents
     private String cv;
@@ -35,7 +35,7 @@ public class UserDTO {
     // Directeur assigné
     private Long directeurId;
 
-    // ✅ Sujet de thèse (assigné par le directeur)
+    // Sujet de thèse (assigné par le directeur)
     private String titreThese;
 
     // Suivi doctorant

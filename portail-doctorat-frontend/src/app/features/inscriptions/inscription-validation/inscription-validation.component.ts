@@ -1,11 +1,10 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms'; // Pour le champ commentaire
+import { FormsModule } from '@angular/forms';
 import { InscriptionService } from '@core/services/inscription.service';
 import { AuthService } from '@core/services/auth.service';
-import { Inscription, StatutInscription } from '@core/models/inscription.model';
-import { Role } from '@core/models/user.model';
+import { Inscription } from '@core/models/inscription.model';
 
 @Component({
   selector: 'app-inscription-validation',
@@ -18,7 +17,7 @@ import { Role } from '@core/models/user.model';
           <h2 class="fw-bold mb-1">Validation des Inscriptions</h2>
           <p class="text-muted">
             Espace de validation 
-            @if (isAdmin()) { <span class="badge bg-danger">ADMINISTRATION</span> }
+            @if (isAdminUser()) { <span class="badge bg-danger">ADMINISTRATION</span> }
             @else { <span class="badge bg-info text-dark">DIRECTION DE THÈSE</span> }
           </p>
         </div>
@@ -62,8 +61,7 @@ import { Role } from '@core/models/user.model';
                     <div class="d-flex align-items-center mb-2">
                       <span class="badge bg-secondary me-2">#{{ inscription.id }}</span>
                       <h5 class="mb-0 fw-bold">
-                         Candidat ID: {{ inscription.doctorantId }} 
-                         <!-- Si vous avez le nom, affichez-le ici via un UserDTO -->
+                         {{ getDoctorantNom(inscription) }}
                       </h5>
                     </div>
                     
@@ -71,13 +69,14 @@ import { Role } from '@core/models/user.model';
                       <i class="bi bi-mortarboard me-1"></i> <strong>Sujet :</strong> {{ inscription.sujetThese }}
                     </p>
                     <p class="text-muted small mb-3">
-                      <i class="bi bi-building me-1"></i> Labo : {{ inscription.laboratoireAccueil }} 
-                      | <i class="bi bi-calendar me-1"></i> Campagne : {{ inscription.campagne?.titre }}
+                      <i class="bi bi-building me-1"></i> Labo : {{ inscription.laboratoireAccueil || 'Non spécifié' }} 
+                      @if (inscription.campagne) {
+                        | <i class="bi bi-calendar me-1"></i> Campagne : {{ inscription.campagne.titre }}
+                      }
                     </p>
 
-                    <!-- LIEN VERS LES DOCUMENTS (Optionnel si vous avez une page détail) -->
+                    <!-- LIEN VERS LES DOCUMENTS -->
                     <div class="d-flex gap-2">
-                      <!-- Ici on pourrait mettre des boutons pour télécharger les PDF -->
                       <button class="btn btn-sm btn-light border">
                         <i class="bi bi-file-earmark-pdf text-danger"></i> Voir les pièces jointes
                       </button>
@@ -85,7 +84,7 @@ import { Role } from '@core/models/user.model';
                   </div>
 
                   <!-- COLONNE 2 : ACTIONS -->
-                  <div class="col-md-4 border-start ps-md-4 mt-3 mt-md-0 d-flex flex-col justify-content-center">
+                  <div class="col-md-4 border-start ps-md-4 mt-3 mt-md-0 d-flex flex-column justify-content-center">
                     
                     <!-- Zone de commentaire -->
                     <textarea class="form-control mb-2" rows="2" 
@@ -119,21 +118,17 @@ export class InscriptionValidationComponent implements OnInit {
   // Gestion des commentaires par ID d'inscription
   commentaires: { [key: number]: string } = {};
 
-  // Rôles
-  isAdmin = this.authService.isAdmin;
-  isDirecteur = this.authService.isDirecteur;
-
   // Filtrage intelligent selon le Rôle
   inscriptionsEnAttente = computed(() => {
     const list = this.allInscriptions();
 
-    if (this.isAdmin()) {
+    if (this.isAdminUser()) {
       // L'Admin voit ce qui est EN_ATTENTE_ADMIN (étape 1)
-      return list.filter(i => i.statut === StatutInscription.EN_ATTENTE_ADMIN);
+      return list.filter(i => i.statut === 'EN_ATTENTE_ADMIN');
     }
-    else if (this.isDirecteur()) {
+    else if (this.isDirecteurUser()) {
       // Le Directeur voit ce qui est EN_ATTENTE_DIRECTEUR (étape 2)
-      return list.filter(i => i.statut === StatutInscription.EN_ATTENTE_DIRECTEUR);
+      return list.filter(i => i.statut === 'EN_ATTENTE_DIRECTEUR');
     }
 
     return [];
@@ -148,14 +143,26 @@ export class InscriptionValidationComponent implements OnInit {
     this.loadInscriptions();
   }
 
+  // =====================================================
+  // HELPERS DE RÔLES
+  // =====================================================
+
+  isAdminUser(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  isDirecteurUser(): boolean {
+    return this.authService.isDirecteur();
+  }
+
+  // =====================================================
+  // CHARGEMENT DES DONNÉES
+  // =====================================================
+
   loadInscriptions() {
     this.isLoading.set(true);
 
-    // L'Admin voit TOUTES les inscriptions, le Directeur voit celles affectées (ou toutes selon votre règle métier)
-    // Ici, on charge tout et on filtre localement avec le computed() pour simplifier,
-    // mais idéalement il faudrait des endpoints backend séparés (/api/inscriptions/to-validate)
-
-    if (this.isAdmin()) {
+    if (this.isAdminUser()) {
       this.inscriptionService.getAllInscriptions().subscribe({
         next: (data) => {
           this.allInscriptions.set(data);
@@ -163,28 +170,63 @@ export class InscriptionValidationComponent implements OnInit {
         },
         error: () => this.isLoading.set(false)
       });
-    } else if (this.isDirecteur()) {
+    } else if (this.isDirecteurUser()) {
       // Si le backend a un endpoint spécifique pour le directeur, utilisez-le
-      // Sinon on charge tout (attention sécurité en prod)
-      this.inscriptionService.getAllInscriptions().subscribe({
-        next: (data) => {
-          this.allInscriptions.set(data);
-          this.isLoading.set(false);
-        },
-        error: () => this.isLoading.set(false)
-      });
+      const directeurId = this.authService.currentUser()?.id;
+      if (directeurId) {
+        this.inscriptionService.getInscriptionsByDirecteur(directeurId).subscribe({
+          next: (data) => {
+            this.allInscriptions.set(data);
+            this.isLoading.set(false);
+          },
+          error: () => this.isLoading.set(false)
+        });
+      } else {
+        this.isLoading.set(false);
+      }
     }
   }
+
+  // =====================================================
+  // HELPERS POUR AFFICHER LES DONNÉES DOCTORANT
+  // =====================================================
+
+  getDoctorantNom(ins: Inscription): string {
+    if (ins.doctorant) {
+      const prenom = ins.doctorant.prenom || ins.doctorant.firstName || '';
+      const nom = ins.doctorant.nom || ins.doctorant.lastName || '';
+      if (prenom || nom) {
+        return `${prenom} ${nom}`.trim();
+      }
+    }
+    return `Candidat ID: ${ins.doctorantId}`;
+  }
+
+  // =====================================================
+  // ACTIONS
+  // =====================================================
 
   valider(inscription: Inscription) {
     if (!confirm('Confirmer la validation de ce dossier ?')) return;
 
     const commentaire = this.commentaires[inscription.id] || '';
 
-    if (this.isAdmin()) {
-      this.inscriptionService.validerParAdmin(inscription.id, commentaire).subscribe(this.handleSuccess);
+    if (this.isAdminUser()) {
+      this.inscriptionService.validerParAdmin(inscription.id, commentaire).subscribe({
+        next: () => {
+          this.loadInscriptions();
+          alert('Opération effectuée avec succès.');
+        },
+        error: (err: any) => alert("Erreur lors de l'opération")
+      });
     } else {
-      this.inscriptionService.validerParDirecteur(inscription.id, commentaire).subscribe(this.handleSuccess);
+      this.inscriptionService.validerParDirecteur(inscription.id, commentaire).subscribe({
+        next: () => {
+          this.loadInscriptions();
+          alert('Opération effectuée avec succès.');
+        },
+        error: (err: any) => alert("Erreur lors de l'opération")
+      });
     }
   }
 
@@ -198,18 +240,22 @@ export class InscriptionValidationComponent implements OnInit {
 
     if (!confirm('Voulez-vous vraiment rejeter ce dossier ?')) return;
 
-    if (this.isAdmin()) {
-      this.inscriptionService.rejeterParAdmin(inscription.id, commentaire).subscribe(this.handleSuccess);
+    if (this.isAdminUser()) {
+      this.inscriptionService.rejeterParAdmin(inscription.id, commentaire).subscribe({
+        next: () => {
+          this.loadInscriptions();
+          alert('Opération effectuée avec succès.');
+        },
+        error: (err: any) => alert("Erreur lors de l'opération")
+      });
     } else {
-      this.inscriptionService.rejeterParDirecteur(inscription.id, commentaire).subscribe(this.handleSuccess);
+      this.inscriptionService.rejeterParDirecteur(inscription.id, commentaire).subscribe({
+        next: () => {
+          this.loadInscriptions();
+          alert('Opération effectuée avec succès.');
+        },
+        error: (err: any) => alert("Erreur lors de l'opération")
+      });
     }
   }
-
-  private handleSuccess = {
-    next: () => {
-      this.loadInscriptions(); // Recharger la liste
-      alert('Opération effectuée avec succès.');
-    },
-    error: (err: any) => alert("Erreur lors de l'opération")
-  };
 }

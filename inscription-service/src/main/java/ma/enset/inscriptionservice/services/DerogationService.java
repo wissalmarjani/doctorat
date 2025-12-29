@@ -9,20 +9,61 @@ import java.util.Optional;
 
 public interface DerogationService {
 
-    /**
-     * Crée une demande de dérogation
-     */
-    Derogation demanderDerogation(Long doctorantId, TypeDerogation type, String motif);
+    // ========================================================
+    // DOCTORANT
+    // ========================================================
 
     /**
-     * Approuve une dérogation
+     * Crée une demande de dérogation (statut: EN_ATTENTE_DIRECTEUR)
+     */
+    Derogation demanderDerogation(Long doctorantId, Long directeurId, TypeDerogation type, String motif);
+
+    /**
+     * Récupère toutes les dérogations d'un doctorant
+     */
+    List<Derogation> getDerogationsByDoctorant(Long doctorantId);
+
+    // ========================================================
+    // DIRECTEUR
+    // ========================================================
+
+    /**
+     * Récupère les dérogations en attente pour un directeur
+     */
+    List<Derogation> getDerogationsEnAttenteDirecteur(Long directeurId);
+
+    /**
+     * Le directeur valide une dérogation (passe à EN_ATTENTE_ADMIN)
+     */
+    Derogation validerParDirecteur(Long derogationId, Long directeurId, String commentaire);
+
+    /**
+     * Le directeur refuse une dérogation
+     */
+    Derogation refuserParDirecteur(Long derogationId, Long directeurId, String commentaire);
+
+    // ========================================================
+    // ADMIN
+    // ========================================================
+
+    /**
+     * Récupère les dérogations en attente de validation admin
+     */
+    List<Derogation> getDerogationsEnAttenteAdmin();
+
+    /**
+     * L'admin approuve une dérogation
      */
     Derogation approuverDerogation(Long derogationId, Long decideurId, String commentaire);
 
     /**
-     * Refuse une dérogation
+     * L'admin refuse une dérogation
      */
     Derogation refuserDerogation(Long derogationId, Long decideurId, String commentaire);
+
+    // ========================================================
+    // COMMUN
+    // ========================================================
 
     /**
      * Récupère une dérogation par ID
@@ -30,12 +71,7 @@ public interface DerogationService {
     Optional<Derogation> getDerogationById(Long id);
 
     /**
-     * Récupère toutes les dérogations d'un doctorant
-     */
-    List<Derogation> getDerogationsByDoctorant(Long doctorantId);
-
-    /**
-     * Récupère toutes les dérogations en attente
+     * Récupère toutes les dérogations en attente (tous statuts d'attente)
      */
     List<Derogation> getDerogationsEnAttente();
 
@@ -48,4 +84,9 @@ public interface DerogationService {
      * Récupère toutes les dérogations par statut
      */
     List<Derogation> getDerogationsByStatut(StatutDerogation statut);
+
+    /**
+     * Récupère toutes les dérogations
+     */
+    List<Derogation> getAllDerogations();
 }

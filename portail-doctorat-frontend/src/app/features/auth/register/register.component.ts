@@ -202,7 +202,7 @@ export class RegisterComponent {
     this.authService.registerWithFiles(formData).subscribe({
       next: () => {
         alert('Inscription réussie ! Votre dossier a été transmis à l\'administration.');
-        this.router.navigate(['/auth/login']);
+        this.router.navigate(['/login']);
       },
       error: (err) => {
         this.errorMessage.set(err.error?.message || "Erreur lors de l'envoi du dossier.");

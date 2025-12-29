@@ -36,7 +36,7 @@ import { Role } from '@core/models/user.model';
             @if (isDirecteur()) {
               <li class="nav-section">Gestion Académique</li>
 
-              <!-- Validation des candidatures -->
+              <!-- Validation des candidatures (Nouveaux doctorants) -->
               <li>
                 <a routerLink="/validations" routerLinkActive="active">
                   <i class="bi bi-file-earmark-check"></i>
@@ -44,9 +44,23 @@ import { Role } from '@core/models/user.model';
                 </a>
               </li>
 
-              <!-- ❌ SUPPRIMÉ: Mes Doctorants (non conforme au CDC) -->
+              <!-- Réinscriptions (AJOUTÉ) -->
+              <li>
+                <a routerLink="/director/reinscriptions" routerLinkActive="active">
+                  <i class="bi bi-journal-check"></i>
+                  <span>Réinscriptions</span>
+                </a>
+              </li>
 
-                  <!-- Processus de Soutenance -->
+              <!-- Dérogations (AJOUTÉ) -->
+              <li>
+                <a routerLink="/director/derogations" routerLinkActive="active">
+                  <i class="bi bi-clock-history"></i>
+                  <span>Dérogations</span>
+                </a>
+              </li>
+
+              <!-- Processus de Soutenance -->
               <li>
                 <a routerLink="/director/soutenances" routerLinkActive="active">
                   <i class="bi bi-award"></i>

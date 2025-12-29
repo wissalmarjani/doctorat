@@ -70,6 +70,10 @@ public class Inscription {
 
     // --- WORKFLOW VALIDATION ---
 
+    // Date de soumission de la demande (NOUVEAU CHAMP)
+    @Column(name = "date_soumission")
+    private LocalDateTime dateSoumission;
+
     // Commentaires en cas de rejet ou validation
     @Column(name = "commentaire_directeur", length = 1000)
     private String commentaireDirecteur;

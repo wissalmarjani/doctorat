@@ -1,5 +1,6 @@
 package ma.enset.userservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- IMPORTER CECI
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -8,18 +9,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO pour la requête d'inscription
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// 👇 AJOUTE CETTE LIGNE : Cela empêche le crash si le frontend envoie des champs en trop
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RegisterRequest {
 
     @NotBlank(message = "Le matricule est obligatoire")
     @Size(min = 3, max = 50, message = "Le matricule doit contenir entre 3 et 50 caractères")
-    private String matricule; // ✅ Remplace username
+    private String matricule;
 
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Format d'email invalide")
@@ -36,7 +36,5 @@ public class RegisterRequest {
     private String prenom;
 
     @NotBlank(message = "Le numéro de téléphone est obligatoire")
-    private String telephone; // ✅ Ajouté
-
-    // ❌ Rôle supprimé : Le backend force "CANDIDAT" automatiquement.
+    private String telephone;
 }

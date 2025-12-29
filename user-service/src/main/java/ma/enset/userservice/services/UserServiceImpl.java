@@ -2,8 +2,10 @@ package ma.enset.userservice.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.enset.userservice.dto.UserDTO;
 import ma.enset.userservice.entities.User;
 import ma.enset.userservice.enums.Role;
+import ma.enset.userservice.mappers.UserMapper;
 import ma.enset.userservice.repositories.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     // =============================================================
     // CRUD
@@ -48,6 +52,9 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
 
+        log.info("📝 Mise à jour de l'utilisateur ID: {}", id);
+
+        // Champs de base
         if (userDetails.getNom() != null) user.setNom(userDetails.getNom());
         if (userDetails.getPrenom() != null) user.setPrenom(userDetails.getPrenom());
         if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
@@ -55,7 +62,36 @@ public class UserServiceImpl implements UserService {
         if (userDetails.getRole() != null) user.setRole(userDetails.getRole());
         if (userDetails.getEnabled() != null) user.setEnabled(userDetails.getEnabled());
 
-        return userRepository.save(user);
+        // ✅ IMPORTANT: Mise à jour des prérequis doctorant
+        if (userDetails.getNbPublications() != null) {
+            user.setNbPublications(userDetails.getNbPublications());
+            log.info("📊 Mise à jour nbPublications: {}", userDetails.getNbPublications());
+        }
+        if (userDetails.getNbConferences() != null) {
+            user.setNbConferences(userDetails.getNbConferences());
+            log.info("📊 Mise à jour nbConferences: {}", userDetails.getNbConferences());
+        }
+        if (userDetails.getHeuresFormation() != null) {
+            user.setHeuresFormation(userDetails.getHeuresFormation());
+            log.info("📊 Mise à jour heuresFormation: {}", userDetails.getHeuresFormation());
+        }
+
+        // Autres champs optionnels
+        if (userDetails.getAnneeThese() != null) {
+            user.setAnneeThese(userDetails.getAnneeThese());
+        }
+        if (userDetails.getTitreThese() != null) {
+            user.setTitreThese(userDetails.getTitreThese());
+        }
+        if (userDetails.getDirecteurId() != null) {
+            user.setDirecteurId(userDetails.getDirecteurId());
+        }
+
+        User savedUser = userRepository.save(user);
+        log.info("✅ Utilisateur {} mis à jour avec succès (publications={}, conferences={}, heures={})",
+                id, savedUser.getNbPublications(), savedUser.getNbConferences(), savedUser.getHeuresFormation());
+
+        return savedUser;
     }
 
     @Override
@@ -149,7 +185,6 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Cette candidature n'est pas en attente de validation admin. État actuel: " + user.getEtat());
         }
 
-        // Vérifier que le directeur existe
         User directeur = userRepository.findById(directeurId)
                 .orElseThrow(() -> new RuntimeException("Directeur non trouvé avec l'ID: " + directeurId));
 
@@ -198,10 +233,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * ✅ NOUVEAU : Validation directeur AVEC sujet de thèse
-     * Le sujet est stocké dans le champ titreThese de l'utilisateur
-     */
     @Override
     public User validerCandidatureDirecteurAvecSujet(Long id, String sujetThese) {
         User user = userRepository.findById(id)
@@ -211,15 +242,11 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Cette candidature n'est pas en attente de validation directeur. État actuel: " + user.getEtat());
         }
 
-        // Valider le sujet de thèse
         if (sujetThese == null || sujetThese.trim().isEmpty()) {
             throw new RuntimeException("Le sujet de thèse est obligatoire");
         }
 
-        // ✅ Mettre à jour le sujet de thèse
         user.setTitreThese(sujetThese.trim());
-
-        // Changer le rôle en DOCTORANT
         user.setRole(Role.DOCTORANT);
         user.setEtat("VALIDE");
         user.setDateInscription(LocalDateTime.now());
@@ -248,5 +275,23 @@ public class UserServiceImpl implements UserService {
 
         log.info("❌ Candidature {} refusée par directeur. Motif: {}", id, motif);
         return userRepository.save(user);
+    }
+
+    // =============================================================
+    // GESTION DIRECTEUR - DOCTORANTS
+    // =============================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDTO> getDoctorantsByDirecteur(Long directeurId) {
+        log.info("📋 Récupération des doctorants du directeur: {}", directeurId);
+
+        List<User> doctorants = userRepository.findByDirecteurId(directeurId);
+
+        log.info("✅ {} doctorants trouvés pour le directeur {}", doctorants.size(), directeurId);
+
+        return doctorants.stream()
+                .map(userMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }

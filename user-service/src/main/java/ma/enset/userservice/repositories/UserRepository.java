@@ -33,4 +33,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleAndEnabledTrue(Role role);
 
     List<User> findByEtat(String etat);
+
+    // ========== NOUVEAU : Pour les dérogations ==========
+
+    /**
+     * Récupérer tous les doctorants d'un directeur
+     */
+    List<User> findByDirecteurId(Long directeurId);
+
+    /**
+     * Récupérer les doctorants actifs d'un directeur
+     */
+    List<User> findByDirecteurIdAndEnabledTrue(Long directeurId);
+
+    /**
+     * Récupérer les doctorants d'un directeur par rôle
+     */
+    List<User> findByDirecteurIdAndRole(Long directeurId, Role role);
 }

@@ -64,21 +64,25 @@ public class DerogationController {
     }
 
     /**
-     * Demander une dérogation
+     * Demander une dérogation (avec directeurId)
      * POST /api/derogations
      */
     @PostMapping
-    public ResponseEntity<Derogation> demanderDerogation(@Valid @RequestBody DemandeDerogationDTO dto) {
-        log.info("📝 Nouvelle demande de dérogation - Doctorant: {}, Type: {}", 
-                dto.getDoctorantId(), dto.getTypeDerogation());
-        
-        Derogation derogation = derogationService.demanderDerogation(
-                dto.getDoctorantId(),
-                dto.getTypeDerogation(),
-                dto.getMotif()
-        );
-        
-        return ResponseEntity.status(HttpStatus.CREATED).body(derogation);
+    public ResponseEntity<?> demanderDerogation(@Valid @RequestBody DemandeDerogationDTO dto) {
+        log.info("📝 Nouvelle demande de dérogation - Doctorant: {}, Directeur: {}, Type: {}",
+                dto.getDoctorantId(), dto.getDirecteurId(), dto.getTypeDerogation());
+
+        try {
+            Derogation derogation = derogationService.demanderDerogation(
+                    dto.getDoctorantId(),
+                    dto.getDirecteurId(),
+                    dto.getTypeDerogation(),
+                    dto.getMotif()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -91,10 +95,87 @@ public class DerogationController {
         return ResponseEntity.ok(derogations);
     }
 
-    // ==================== ENDPOINTS ADMIN/PED ====================
+    // ==================== ENDPOINTS DIRECTEUR ====================
 
     /**
-     * Récupérer toutes les dérogations en attente (pour admin/PED)
+     * Récupérer les dérogations en attente pour un directeur
+     * GET /api/derogations/directeur/{directeurId}
+     */
+    @GetMapping("/directeur/{directeurId}")
+    public ResponseEntity<List<Derogation>> getDerogationsDirecteur(@PathVariable Long directeurId) {
+        log.info("📋 Récupération dérogations pour directeur: {}", directeurId);
+        List<Derogation> derogations = derogationService.getDerogationsEnAttenteDirecteur(directeurId);
+        return ResponseEntity.ok(derogations);
+    }
+
+    /**
+     * Directeur valide une dérogation
+     * PUT /api/derogations/{id}/valider-directeur
+     */
+    @PutMapping("/{id}/valider-directeur")
+    public ResponseEntity<?> validerParDirecteur(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Long directeurId = Long.valueOf(payload.get("directeurId").toString());
+            String commentaire = (String) payload.get("commentaire");
+
+            log.info("✅ Validation directeur - Dérogation: {}, Directeur: {}", id, directeurId);
+            Derogation derogation = derogationService.validerParDirecteur(id, directeurId, commentaire);
+            return ResponseEntity.ok(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Directeur refuse une dérogation
+     * PUT /api/derogations/{id}/refuser-directeur
+     */
+    @PutMapping("/{id}/refuser-directeur")
+    public ResponseEntity<?> refuserParDirecteur(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Long directeurId = Long.valueOf(payload.get("directeurId").toString());
+            String commentaire = (String) payload.get("commentaire");
+
+            if (commentaire == null || commentaire.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Le commentaire est obligatoire pour un refus"));
+            }
+
+            log.info("❌ Refus directeur - Dérogation: {}, Directeur: {}", id, directeurId);
+            Derogation derogation = derogationService.refuserParDirecteur(id, directeurId, commentaire);
+            return ResponseEntity.ok(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ==================== ENDPOINTS ADMIN ====================
+
+    /**
+     * Récupérer toutes les dérogations
+     * GET /api/derogations
+     */
+    @GetMapping
+    public ResponseEntity<List<Derogation>> getAllDerogations() {
+        List<Derogation> derogations = derogationService.getAllDerogations();
+        return ResponseEntity.ok(derogations);
+    }
+
+    /**
+     * Récupérer les dérogations en attente admin
+     * GET /api/derogations/en-attente-admin
+     */
+    @GetMapping("/en-attente-admin")
+    public ResponseEntity<List<Derogation>> getDerogationsEnAttenteAdmin() {
+        List<Derogation> derogations = derogationService.getDerogationsEnAttenteAdmin();
+        return ResponseEntity.ok(derogations);
+    }
+
+    /**
+     * Récupérer toutes les dérogations en attente (tous statuts)
      * GET /api/derogations/en-attente
      */
     @GetMapping("/en-attente")
@@ -125,58 +206,77 @@ public class DerogationController {
     }
 
     /**
-     * Traiter une dérogation (approuver ou refuser)
-     * PUT /api/derogations/decision
-     */
-    @PutMapping("/decision")
-    public ResponseEntity<Derogation> traiterDerogation(@Valid @RequestBody DecisionDerogationDTO dto) {
-        log.info("⚖️ Traitement dérogation - ID: {}, Décision: {}", 
-                dto.getDerogationId(), dto.getApprouver() ? "APPROUVER" : "REFUSER");
-        
-        Derogation derogation;
-        if (dto.getApprouver()) {
-            derogation = derogationService.approuverDerogation(
-                    dto.getDerogationId(),
-                    dto.getDecideurId(),
-                    dto.getCommentaire()
-            );
-        } else {
-            derogation = derogationService.refuserDerogation(
-                    dto.getDerogationId(),
-                    dto.getDecideurId(),
-                    dto.getCommentaire()
-            );
-        }
-        
-        return ResponseEntity.ok(derogation);
-    }
-
-    /**
-     * Approuver une dérogation (raccourci)
+     * Admin approuve une dérogation
      * PUT /api/derogations/{id}/approuver
      */
     @PutMapping("/{id}/approuver")
-    public ResponseEntity<Derogation> approuverDerogation(
+    public ResponseEntity<?> approuverDerogation(
             @PathVariable Long id,
-            @RequestParam Long decideurId,
-            @RequestParam(required = false) String commentaire) {
-        
-        Derogation derogation = derogationService.approuverDerogation(id, decideurId, commentaire);
-        return ResponseEntity.ok(derogation);
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Long decideurId = Long.valueOf(payload.get("decideurId").toString());
+            String commentaire = (String) payload.get("commentaire");
+
+            log.info("✅ Approbation admin - Dérogation: {}, Admin: {}", id, decideurId);
+            Derogation derogation = derogationService.approuverDerogation(id, decideurId, commentaire);
+            return ResponseEntity.ok(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
-     * Refuser une dérogation (raccourci)
+     * Admin refuse une dérogation
      * PUT /api/derogations/{id}/refuser
      */
     @PutMapping("/{id}/refuser")
-    public ResponseEntity<Derogation> refuserDerogation(
+    public ResponseEntity<?> refuserDerogation(
             @PathVariable Long id,
-            @RequestParam Long decideurId,
-            @RequestParam String commentaire) {
-        
-        Derogation derogation = derogationService.refuserDerogation(id, decideurId, commentaire);
-        return ResponseEntity.ok(derogation);
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Long decideurId = Long.valueOf(payload.get("decideurId").toString());
+            String commentaire = (String) payload.get("commentaire");
+
+            if (commentaire == null || commentaire.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Le commentaire est obligatoire pour un refus"));
+            }
+
+            log.info("❌ Refus admin - Dérogation: {}, Admin: {}", id, decideurId);
+            Derogation derogation = derogationService.refuserDerogation(id, decideurId, commentaire);
+            return ResponseEntity.ok(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Traiter une dérogation (legacy - pour compatibilité)
+     * PUT /api/derogations/decision
+     */
+    @PutMapping("/decision")
+    public ResponseEntity<?> traiterDerogation(@Valid @RequestBody DecisionDerogationDTO dto) {
+        log.info("⚖️ Traitement dérogation - ID: {}, Décision: {}",
+                dto.getDerogationId(), dto.getApprouver() ? "APPROUVER" : "REFUSER");
+
+        try {
+            Derogation derogation;
+            if (dto.getApprouver()) {
+                derogation = derogationService.approuverDerogation(
+                        dto.getDerogationId(),
+                        dto.getDecideurId(),
+                        dto.getCommentaire()
+                );
+            } else {
+                derogation = derogationService.refuserDerogation(
+                        dto.getDerogationId(),
+                        dto.getDecideurId(),
+                        dto.getCommentaire()
+                );
+            }
+            return ResponseEntity.ok(derogation);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // ==================== ENDPOINT STATISTIQUES ====================
@@ -188,11 +288,12 @@ public class DerogationController {
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStatistiques() {
         Map<String, Object> stats = new HashMap<>();
-        
-        stats.put("enAttente", derogationService.getDerogationsEnAttente().size());
+
+        stats.put("enAttenteDirecteur", derogationService.getDerogationsByStatut(StatutDerogation.EN_ATTENTE_DIRECTEUR).size());
+        stats.put("enAttenteAdmin", derogationService.getDerogationsByStatut(StatutDerogation.EN_ATTENTE_ADMIN).size());
         stats.put("approuvees", derogationService.getDerogationsByStatut(StatutDerogation.APPROUVEE).size());
         stats.put("refusees", derogationService.getDerogationsByStatut(StatutDerogation.REFUSEE).size());
-        
+
         return ResponseEntity.ok(stats);
     }
 }

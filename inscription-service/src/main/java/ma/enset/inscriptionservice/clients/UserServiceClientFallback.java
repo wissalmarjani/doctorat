@@ -1,21 +1,28 @@
 package ma.enset.inscriptionservice.clients;
 
-import lombok.extern.slf4j.Slf4j;
 import ma.enset.inscriptionservice.dto.UserDTO;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
+
 @Component
-@Slf4j
 public class UserServiceClientFallback implements UserServiceClient {
 
     @Override
     public UserDTO getUserById(Long id) {
-        log.warn("⚠️ Fallback: User Service indisponible pour getUserById({})", id);
+        // Retourne un UserDTO vide en cas d'erreur
         return UserDTO.builder()
                 .id(id)
                 .nom("Utilisateur")
                 .prenom("Inconnu")
-                .email("user" + id + "@fallback.ma")
+                .email("inconnu@example.com")
                 .build();
+    }
+
+    @Override
+    public List<UserDTO> getDoctorantsByDirecteur(Long directeurId) {
+        // Retourne une liste vide en cas d'erreur
+        return Collections.emptyList();
     }
 }

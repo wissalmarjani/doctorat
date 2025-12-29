@@ -292,14 +292,35 @@ export class InscriptionListComponent implements OnInit {
 
   loadData() {
     this.isLoading.set(true);
-    this.inscriptionService.getMyInscriptions().subscribe({
+    const user = this.currentUser();
+
+    if (!user?.id) {
+      console.error('❌ Utilisateur non connecté ou ID manquant');
+      this.errorMessage.set('Vous devez être connecté pour voir vos inscriptions');
+      this.isLoading.set(false);
+      return;
+    }
+
+    console.log('📤 Chargement des inscriptions pour doctorant ID:', user.id);
+
+    // ✅ Utiliser getByDoctorant avec l'ID de l'utilisateur connecté
+    this.inscriptionService.getByDoctorant(user.id).subscribe({
       next: (data) => {
+        console.log('✅ Inscriptions reçues:', data);
         this.inscriptions.set(data);
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('Erreur:', err);
+        console.error('❌ Erreur chargement inscriptions:', err);
         this.isLoading.set(false);
+
+        // Si 404, aucune inscription trouvée (ce n'est pas une erreur)
+        if (err.status === 404) {
+          this.inscriptions.set([]);
+        } else {
+          this.errorMessage.set('Erreur lors du chargement des inscriptions');
+          setTimeout(() => this.errorMessage.set(null), 5000);
+        }
       }
     });
   }
