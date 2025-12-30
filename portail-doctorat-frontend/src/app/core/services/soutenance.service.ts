@@ -106,9 +106,18 @@ export class SoutenanceService {
         return this.http.put<Soutenance>(`${this.baseUrl}/${id}/rejeter`, { motif });
     }
 
-    getDocumentUrl(filename: string): string {
-        if (!filename) return '';
-        return `${environment.soutenanceServiceUrl}/uploads/soutenances/${filename}`;
+    getDocumentUrl(filePath: string): string {
+        if (!filePath) return '';
+
+        let filename = filePath;
+        if (filePath.includes('uploads/soutenances/')) {
+            filename = filePath.split('uploads/soutenances/').pop() || filePath;
+        } else if (filePath.includes('/')) {
+            filename = filePath.split('/').pop() || filePath;
+        }
+
+        // ✅ URL correcte : /api/soutenances/files/{filename}
+        return `${environment.soutenanceServiceUrl}/soutenances/files/${filename}`;
     }
 
     openDocument(path: string): void {

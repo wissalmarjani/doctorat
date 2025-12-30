@@ -110,7 +110,7 @@ import { AuthService } from '@core/services/auth.service';
         </form>
 
         <div class="auth-footer">
-          <p>Déjà inscrit ? <a routerLink="/auth/login">Connexion</a></p>
+          <p>Déjà inscrit ? <a routerLink="/login">Connexion</a></p>
         </div>
       </div>
     </div>

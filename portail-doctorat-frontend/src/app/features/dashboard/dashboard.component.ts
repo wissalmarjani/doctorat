@@ -6,6 +6,7 @@ import { AuthService } from '@core/services/auth.service';
 import { UserService } from '@core/services/user.service';
 import { InscriptionService } from '@core/services/inscription.service';
 import { DerogationService } from '@core/services/derogation.service';
+import { SoutenanceService } from '@core/services/soutenance.service';
 import { Role } from '@core/models/user.model';
 import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.component';
 
@@ -37,6 +38,7 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
             <div class="hero-date"><i class="bi bi-calendar3"></i>{{ today | date:'EEEE d MMMM yyyy' }}</div>
           </div>
 
+          <!-- SECTION DOCTORANT -->
           @if (isDoctorant()) {
             <div class="thesis-card">
               <div class="thesis-header"><div class="thesis-icon"><i class="bi bi-journal-text"></i></div><h3>Mon Sujet de Thèse</h3></div>
@@ -90,28 +92,43 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
             </div>
           }
 
+          <!-- SECTION DIRECTEUR -->
           @if (isDirecteur()) {
             <div class="stats-grid">
               <div class="stat-card purple"><div class="stat-icon"><i class="bi bi-journal-check"></i></div><div class="stat-info"><span class="stat-label">Réinscriptions à valider</span><span class="stat-value">{{ stats().reinscriptionsEnAttente }}</span></div></div>
+
+              <!-- Carte Nouveaux Doctorants -->
               <div class="stat-card warning"><div class="stat-icon"><i class="bi bi-folder-check"></i></div><div class="stat-info"><span class="stat-label">Nouveaux doctorants</span><span class="stat-value">{{ stats().aValider }}</span></div></div>
+
               <div class="stat-card orange"><div class="stat-icon"><i class="bi bi-clock-history"></i></div><div class="stat-info"><span class="stat-label">Dérogations à traiter</span><span class="stat-value">{{ stats().derogationsEnAttente }}</span></div></div>
-              <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-mortarboard"></i></div><div class="stat-info"><span class="stat-label">Soutenances</span><span class="stat-value">{{ stats().soutenances }}</span></div></div>
+              <div class="stat-card blue"><div class="stat-icon"><i class="bi bi-mortarboard"></i></div><div class="stat-info"><span class="stat-label">Soutenances à valider</span><span class="stat-value">{{ stats().soutenances }}</span></div></div>
             </div>
 
             @if (stats().reinscriptionsEnAttente > 0) {
               <div class="alert-banner info"><div class="alert-icon"><i class="bi bi-journal-check"></i></div><div class="alert-content"><strong>{{ stats().reinscriptionsEnAttente }} demande(s) de réinscription en attente</strong><p>Vos doctorants ont soumis des demandes de réinscription qui nécessitent votre validation.</p></div><a routerLink="/director/reinscriptions" class="alert-action">Traiter les demandes</a></div>
             }
 
+            @if (stats().aValider > 0) {
+              <div class="alert-banner warning"><div class="alert-icon"><i class="bi bi-folder-check"></i></div><div class="alert-content"><strong>{{ stats().aValider }} nouveau(x) dossier(s) d'inscription en attente</strong><p>Des dossiers de première inscription nécessitent votre validation.</p></div><a routerLink="/validations" class="alert-action">Traiter les dossiers</a></div>
+            }
+
             @if (stats().derogationsEnAttente > 0) {
               <div class="alert-banner warning"><div class="alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div><div class="alert-content"><strong>{{ stats().derogationsEnAttente }} demande(s) de dérogation en attente</strong><p>Vos doctorants ont soumis des demandes de prolongation qui nécessitent votre validation.</p></div><a routerLink="/director/derogations" class="alert-action">Traiter les demandes</a></div>
+            }
+
+            @if (stats().soutenances > 0) {
+              <div class="alert-banner blue"><div class="alert-icon"><i class="bi bi-award"></i></div><div class="alert-content"><strong>{{ stats().soutenances }} demande(s) de soutenance en attente</strong><p>Des demandes de soutenance de vos doctorants nécessitent votre validation.</p></div><a routerLink="/director/soutenances" class="alert-action">Traiter les demandes</a></div>
             }
 
             <h4 class="section-title"><i class="bi bi-lightning-charge me-2"></i>Actions Rapides</h4>
             <div class="actions-grid">
               <a routerLink="/director/reinscriptions" class="action-card purple"><div class="action-icon"><i class="bi bi-journal-check"></i></div><div class="action-content"><h5>Réinscriptions</h5><p>{{ stats().reinscriptionsEnAttente }} demande(s) à valider</p></div>@if (stats().reinscriptionsEnAttente > 0) { <span class="action-badge">{{ stats().reinscriptionsEnAttente }}</span> }<i class="bi bi-arrow-right"></i></a>
-              <a routerLink="/validations" class="action-card green"><div class="action-icon"><i class="bi bi-check2-circle"></i></div><div class="action-content"><h5>Nouveaux Doctorants</h5><p>{{ stats().aValider }} dossier(s) en attente</p></div><i class="bi bi-arrow-right"></i></a>
+
+              <!-- Bouton Nouveaux Doctorants -->
+              <a routerLink="/validations" class="action-card green"><div class="action-icon"><i class="bi bi-check2-circle"></i></div><div class="action-content"><h5>Nouveaux Doctorants</h5><p>{{ stats().aValider }} dossier(s) en attente</p></div>@if (stats().aValider > 0) { <span class="action-badge">{{ stats().aValider }}</span> }<i class="bi bi-arrow-right"></i></a>
+
               <a routerLink="/director/derogations" class="action-card orange"><div class="action-icon"><i class="bi bi-clock-history"></i></div><div class="action-content"><h5>Dérogations</h5><p>{{ stats().derogationsEnAttente }} demande(s) à traiter</p></div>@if (stats().derogationsEnAttente > 0) { <span class="action-badge">{{ stats().derogationsEnAttente }}</span> }<i class="bi bi-arrow-right"></i></a>
-              <a routerLink="/director/soutenances" class="action-card blue"><div class="action-icon"><i class="bi bi-mortarboard"></i></div><div class="action-content"><h5>Soutenances</h5><p>Gérer les demandes</p></div><i class="bi bi-arrow-right"></i></a>
+              <a routerLink="/director/soutenances" class="action-card blue"><div class="action-icon"><i class="bi bi-mortarboard"></i></div><div class="action-content"><h5>Soutenances</h5><p>{{ stats().soutenances }} demande(s) à traiter</p></div>@if (stats().soutenances > 0) { <span class="action-badge">{{ stats().soutenances }}</span> }<i class="bi bi-arrow-right"></i></a>
             </div>
           }
         </div>
@@ -147,10 +164,12 @@ import { AdminDashboardComponent } from '../admin/dashboard/admin-dashboard.comp
     .alert-banner.warning { background: #fef3c7; border: 1px solid #fcd34d; }
     .alert-banner.danger { background: #fee2e2; border: 1px solid #fca5a5; }
     .alert-banner.info { background: #f3e8ff; border: 1px solid #c4b5fd; }
+    .alert-banner.blue { background: #eff6ff; border: 1px solid #93c5fd; }
     .alert-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     .alert-banner.warning .alert-icon { background: #f59e0b; color: white; }
     .alert-banner.danger .alert-icon { background: #ef4444; color: white; }
     .alert-banner.info .alert-icon { background: #8b5cf6; color: white; }
+    .alert-banner.blue .alert-icon { background: #3b82f6; color: white; }
     .alert-content { flex: 1; }
     .alert-content strong { display: block; margin-bottom: 0.25rem; }
     .alert-content p { margin: 0; font-size: 0.875rem; opacity: 0.8; }
@@ -227,7 +246,14 @@ export class DashboardComponent implements OnInit {
   currentUserData = signal<any>(null);
   isRefreshing = signal(false);
 
-  constructor(public authService: AuthService, private userService: UserService, private inscriptionService: InscriptionService, private derogationService: DerogationService, private router: Router) {}
+  constructor(
+      public authService: AuthService,
+      private userService: UserService,
+      private inscriptionService: InscriptionService,
+      private derogationService: DerogationService,
+      private soutenanceService: SoutenanceService,
+      private router: Router
+  ) {}
 
   ngOnInit(): void { this.loadUserFromDB(); this.loadData(); }
 
@@ -265,11 +291,23 @@ export class DashboardComponent implements OnInit {
 
   private loadData(): void {
     const u = this.authService.currentUser(); if (!u) return;
-    if (this.isDoctorant()) { this.inscriptionService.getByDoctorant(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, inscriptions: d.length })), error: () => {} }); }
+    if (this.isDoctorant()) {
+      this.inscriptionService.getByDoctorant(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, inscriptions: d.length })), error: () => {} });
+    }
     else if (this.isDirecteur()) {
-      this.inscriptionService.getInscriptionsByDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, aValider: d.filter((i: any) => i.statut === 'EN_ATTENTE_DIRECTEUR' && i.typeInscription === 'PREMIERE_INSCRIPTION').length })), error: () => {} });
+      // ✅ MODIFICATION ICI : Utiliser le UserService pour compter les nouveaux doctorants
+      this.userService.getUsersByEtat('EN_ATTENTE_DIRECTEUR').subscribe({
+        next: (users) => {
+          const myCandidates = users.filter(user => user.directeurId === u.id);
+          this.stats.update(s => ({ ...s, aValider: myCandidates.length }));
+        },
+        error: () => {}
+      });
+
+      // Le reste ne change pas
       this.inscriptionService.getReinscritionsEnAttenteDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, reinscriptionsEnAttente: d.length })), error: () => {} });
       this.derogationService.getDerogationsDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, derogationsEnAttente: d.filter((x: any) => x.statut === 'EN_ATTENTE_DIRECTEUR' || x.statut === 'EN_ATTENTE').length })), error: () => {} });
+      this.soutenanceService.getSoutenancesByDirecteur(u.id).subscribe({ next: (d: any) => this.stats.update(s => ({ ...s, soutenances: d.filter((x: any) => x.statut === 'SOUMIS' || x.statut === 'AUTORISEE').length })), error: () => {} });
     }
   }
 }
