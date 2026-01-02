@@ -1,0 +1,47 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Tous les Documents</h1>
+        <p>Gérez les fichiers déposés dans le système</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && documents.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nom du fichier</th>
+                    <th>Type</th>
+                    <th>Propriétaire</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let doc of documents">
+                    <td>
+                        <div class="file-name">
+                            <span class="icon">📄</span>
+                            <strong>{{ doc.nom }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ doc.type }}</td>
+                    <td>Utilisateur #{{ doc.userId }}</td>
+                    <td>{{ doc.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-ghost btn-sm" (click)="download(doc)">💾 Télécharger</button>
+                        <button class="btn btn-danger btn-sm" (click)="delete(doc.id!)">🗑️</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && documents.length === 0">
+        <span class="empty-icon">📁</span>
+        <h3>Aucun document</h3>
+        <p>Le système ne contient aucun fichier pour le moment.</p>
+    </div>
+</div>

@@ -1,0 +1,180 @@
+<div class="auth-container">
+    <div class="register-card animate-slide-up">
+        <!-- Header -->
+        <div class="register-header">
+            <a routerLink="/" class="back-link">← Retour</a>
+            <div class="logo-section">
+                <span class="logo">🎓</span>
+                <h1>Inscription au Doctorat</h1>
+                <p>Créez votre compte pour soumettre votre candidature</p>
+            </div>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="steps-indicator">
+            <div class="step" [class.active]="step >= 1" [class.completed]="step > 1">
+                <div class="step-number">{{ step > 1 ? '✓' : '1' }}</div>
+                <span class="step-label">Informations personnelles</span>
+            </div>
+            <div class="step-line" [class.active]="step > 1"></div>
+            <div class="step" [class.active]="step >= 2" [class.completed]="step > 2">
+                <div class="step-number">{{ step > 2 ? '✓' : '2' }}</div>
+                <span class="step-label">Identifiants</span>
+            </div>
+            <div class="step-line" [class.active]="step > 2"></div>
+            <div class="step" [class.active]="step >= 3">
+                <div class="step-number">3</div>
+                <span class="step-label">Documents</span>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="alert alert-error" *ngIf="error">
+            <span>⚠️</span>
+            <span>{{ error }}</span>
+        </div>
+        <div class="alert alert-success" *ngIf="success">
+            <span>✅</span>
+            <span>{{ success }}</span>
+        </div>
+
+        <!-- Form -->
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+
+            <!-- Step 1: Personal Info -->
+            <div class="form-step" *ngIf="step === 1">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="nom">Nom *</label>
+                        <input type="text" id="nom" formControlName="nom" class="form-control"
+                            [class.is-invalid]="f['nom'].touched && f['nom'].invalid"
+                            placeholder="Votre nom de famille">
+                        <div class="form-error" *ngIf="f['nom'].touched && f['nom'].errors?.['required']">
+                            Le nom est requis
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="prenom">Prénom *</label>
+                        <input type="text" id="prenom" formControlName="prenom" class="form-control"
+                            [class.is-invalid]="f['prenom'].touched && f['prenom'].invalid" placeholder="Votre prénom">
+                        <div class="form-error" *ngIf="f['prenom'].touched && f['prenom'].errors?.['required']">
+                            Le prénom est requis
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email *</label>
+                    <input type="email" id="email" formControlName="email" class="form-control"
+                        [class.is-invalid]="f['email'].touched && f['email'].invalid"
+                        placeholder="votre.email@example.com">
+                    <div class="form-error" *ngIf="f['email'].touched && f['email'].errors?.['required']">
+                        L'email est requis
+                    </div>
+                    <div class="form-error" *ngIf="f['email'].touched && f['email'].errors?.['email']">
+                        Email invalide
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="telephone">Téléphone</label>
+                    <input type="tel" id="telephone" formControlName="telephone" class="form-control"
+                        placeholder="+212 6XX XXX XXX">
+                </div>
+            </div>
+
+            <!-- Step 2: Credentials -->
+            <div class="form-step" *ngIf="step === 2">
+                <div class="form-group">
+                    <label class="form-label" for="matricule">Matricule *</label>
+                    <input type="text" id="matricule" formControlName="matricule" class="form-control"
+                        [class.is-invalid]="f['matricule'].touched && f['matricule'].invalid"
+                        placeholder="Votre matricule étudiant">
+                    <div class="form-hint">Ce matricule sera votre identifiant de connexion</div>
+                    <div class="form-error" *ngIf="f['matricule'].touched && f['matricule'].errors?.['required']">
+                        Le matricule est requis
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe *</label>
+                    <input type="password" id="password" formControlName="password" class="form-control"
+                        [class.is-invalid]="f['password'].touched && f['password'].invalid"
+                        placeholder="Minimum 6 caractères">
+                    <div class="form-error" *ngIf="f['password'].touched && f['password'].errors?.['required']">
+                        Le mot de passe est requis
+                    </div>
+                    <div class="form-error" *ngIf="f['password'].touched && f['password'].errors?.['minlength']">
+                        Le mot de passe doit contenir au moins 6 caractères
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirmer le mot de passe *</label>
+                    <input type="password" id="confirmPassword" formControlName="confirmPassword" class="form-control"
+                        [class.is-invalid]="f['confirmPassword'].touched && f['confirmPassword'].invalid"
+                        placeholder="Confirmez votre mot de passe">
+                    <div class="form-error"
+                        *ngIf="f['confirmPassword'].touched && f['confirmPassword'].errors?.['passwordMismatch']">
+                        Les mots de passe ne correspondent pas
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Documents -->
+            <div class="form-step" *ngIf="step === 3">
+                <div class="upload-section">
+                    <div class="upload-card" [class.uploaded]="cvFile">
+                        <div class="upload-icon">{{ cvFile ? '✅' : '📄' }}</div>
+                        <h4>CV *</h4>
+                        <p>{{ cvFile ? cvFile.name : 'Format PDF, max 5MB' }}</p>
+                        <label class="upload-btn">
+                            <input type="file" accept=".pdf" (change)="onFileChange($event, 'cv')" hidden>
+                            {{ cvFile ? 'Changer' : 'Sélectionner' }}
+                        </label>
+                    </div>
+
+                    <div class="upload-card" [class.uploaded]="diplomeFile">
+                        <div class="upload-icon">{{ diplomeFile ? '✅' : '🎓' }}</div>
+                        <h4>Diplôme *</h4>
+                        <p>{{ diplomeFile ? diplomeFile.name : 'Dernier diplôme obtenu' }}</p>
+                        <label class="upload-btn">
+                            <input type="file" accept=".pdf" (change)="onFileChange($event, 'diplome')" hidden>
+                            {{ diplomeFile ? 'Changer' : 'Sélectionner' }}
+                        </label>
+                    </div>
+
+                    <div class="upload-card" [class.uploaded]="lettreFile">
+                        <div class="upload-icon">{{ lettreFile ? '✅' : '✉️' }}</div>
+                        <h4>Lettre de motivation</h4>
+                        <p>{{ lettreFile ? lettreFile.name : 'Optionnelle' }}</p>
+                        <label class="upload-btn">
+                            <input type="file" accept=".pdf" (change)="onFileChange($event, 'lettre')" hidden>
+                            {{ lettreFile ? 'Changer' : 'Sélectionner' }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" *ngIf="step > 1" (click)="prevStep()">
+                    ← Précédent
+                </button>
+                <button type="button" class="btn btn-primary" *ngIf="step < 3" (click)="nextStep()">
+                    Suivant →
+                </button>
+                <button type="submit" class="btn btn-success btn-lg" *ngIf="step === 3"
+                    [disabled]="loading || !cvFile || !diplomeFile">
+                    <span *ngIf="!loading">Soumettre ma candidature</span>
+                    <span *ngIf="loading" class="loading-spinner"></span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Login Link -->
+        <p class="login-link">
+            Déjà inscrit ? <a routerLink="/login">Se connecter</a>
+        </p>
+    </div>
+</div>

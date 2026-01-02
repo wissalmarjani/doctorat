@@ -1,0 +1,106 @@
+<div class="page-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Ma Soutenance</h1>
+            <p>Gérez vos demandes de soutenance de thèse</p>
+        </div>
+        <button class="btn btn-primary" (click)="openRequestModal()" *ngIf="soutenances.length === 0">
+            <span class="icon">🎓</span> Demander une soutenance
+        </button>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Active/Past Soutenances -->
+    <div class="soutenances-list" *ngIf="!loading && soutenances.length > 0">
+        <div class="soutenance-card" *ngFor="let sout of soutenances">
+            <div class="card-header">
+                <div>
+                    <span class="badge" [ngClass]="getStatusBadge(sout.statut).class">
+                        {{ getStatusBadge(sout.statut).text }}
+                    </span>
+                    <h3 class="sout-title">{{ sout.titre }}</h3>
+                </div>
+                <div class="sout-date" *ngIf="sout.dateSoutenance">
+                    📅 {{ sout.dateSoutenance | date:'dd/MM/yyyy HH:mm' }}
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="detail-row">
+                    <span class="label">📍 Lieu</span>
+                    <span class="value">{{ sout.lieuSoutenance || 'Non défini' }}</span>
+                </div>
+                <div class="detail-row" *ngIf="sout.mention">
+                    <span class="label">🏆 Mention</span>
+                    <span class="value mention-badge">{{ sout.mention }}</span>
+                </div>
+
+                <div class="workflow-status">
+                    <h4>État du dossier</h4>
+                    <div class="timeline-mini">
+                        <div class="step" [class.done]="true">Soumission</div>
+                        <div class="step" [class.done]="sout.statut !== 'SOUMIS'">Validation Directeur</div>
+                        <div class="step" [class.done]="['AUTORISE', 'PLANIFIE', 'SOUTENUE'].includes(sout.statut)">
+                            Autorisation Admin</div>
+                        <div class="step" [class.done]="['PLANIFIE', 'SOUTENUE'].includes(sout.statut)">Planification
+                        </div>
+                        <div class="step" [class.done]="sout.statut === 'SOUTENUE'">Soutenance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && soutenances.length === 0">
+        <span class="empty-icon">🎓</span>
+        <h3>Aucune demande de soutenance</h3>
+        <p>Soumettez votre manuscrit et les documents requis pour initier le processus de soutenance.</p>
+    </div>
+
+    <!-- Request Modal -->
+    <div class="modal-backdrop" *ngIf="showRequestModal" (click)="closeModal()">
+        <div class="modal modal-lg" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Demander une soutenance</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="requestForm" class="request-form">
+                    <div class="form-group">
+                        <label class="form-label">Titre de la thèse *</label>
+                        <textarea formControlName="titre" class="form-control" rows="3"
+                            placeholder="Saisissez le titre définitif de votre thèse"></textarea>
+                    </div>
+
+                    <div class="files-grid">
+                        <div class="file-input-card">
+                            <label>Manuscrit de thèse (PDF) *</label>
+                            <input type="file" (change)="onFileChange($event, 'manuscrit')" accept=".pdf">
+                            <small>Le document complet de votre thèse</small>
+                        </div>
+                        <div class="file-input-card">
+                            <label>Rapport Anti-plagiat *</label>
+                            <input type="file" (change)="onFileChange($event, 'rapportAntiPlagiat')" accept=".pdf">
+                            <small>Rapport officiel de vérification</small>
+                        </div>
+                        <div class="file-input-card">
+                            <label>Autorisation (Optionnel)</label>
+                            <input type="file" (change)="onFileChange($event, 'autorisation')" accept=".pdf">
+                            <small>Tout autre document justificatif</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+                <button class="btn btn-primary" (click)="submitRequest()"
+                    [disabled]="requestForm.invalid || !files['manuscrit'] || !files['rapportAntiPlagiat']">
+                    Soumettre la demande
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

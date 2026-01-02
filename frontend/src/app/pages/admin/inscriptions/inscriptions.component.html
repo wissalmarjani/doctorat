@@ -1,0 +1,59 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Gestion des Inscriptions</h1>
+        <p>Validez les demandes d'inscription et de réinscription</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && inscriptions.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Doctorant</th>
+                    <th>Type</th>
+                    <th>Année Univ.</th>
+                    <th>Année Thèse</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let ins of inscriptions">
+                    <td>
+                        <strong>{{ ins.doctorantNom || 'Doctorant #' + ins.doctorantId }}</strong>
+                    </td>
+                    <td>
+                        <span class="type-badge" [class.type-first]="ins.typeInscription === 'PREMIERE_INSCRIPTION'">
+                            {{ ins.typeInscription === 'PREMIERE_INSCRIPTION' ? '1ère Inscription' : 'Réinscription' }}
+                        </span>
+                    </td>
+                    <td>{{ ins.anneeUniversitaire }}</td>
+                    <td>Année {{ ins.anneeThese }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="getStatusBadge(ins.statut).class">
+                            {{ getStatusBadge(ins.statut).text }}
+                        </span>
+                    </td>
+                    <td class="action-cell">
+                        <button class="btn btn-success btn-sm"
+                            *ngIf="ins.statut === 'EN_ATTENTE_ADMIN' || ins.statut === 'VALIDE_DIRECTEUR'"
+                            (click)="valider(ins.id!)">✓ Valider</button>
+                        <button class="btn btn-danger btn-sm"
+                            *ngIf="ins.statut === 'EN_ATTENTE_ADMIN' || ins.statut === 'VALIDE_DIRECTEUR'"
+                            (click)="rejeter(ins.id!)">✗ Rejeter</button>
+                        <span *ngIf="ins.statut !== 'EN_ATTENTE_ADMIN' && ins.statut !== 'VALIDE_DIRECTEUR'">-</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && inscriptions.length === 0">
+        <span class="empty-icon">📝</span>
+        <h3>Aucune inscription</h3>
+        <p>Il n'y a aucune demande d'inscription dans le système.</p>
+    </div>
+</div>

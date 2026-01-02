@@ -1,0 +1,85 @@
+<div class="page-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Mes Inscriptions</h1>
+            <p>Historique de vos inscriptions et réinscriptions</p>
+        </div>
+        <button class="btn btn-primary" (click)="openNewRequest()">
+            <span class="icon">➕</span> Nouvelle réinscription
+        </button>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && inscriptions.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Année Univ.</th>
+                    <th>Année Thèse</th>
+                    <th>Date Soumission</th>
+                    <th>Statut</th>
+                    <th>Commentaire</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let ins of inscriptions">
+                    <td>
+                        <span class="type-badge" [class.type-first]="ins.typeInscription === 'PREMIERE_INSCRIPTION'">
+                            {{ ins.typeInscription === 'PREMIERE_INSCRIPTION' ? '1ère Inscription' : 'Réinscription' }}
+                        </span>
+                    </td>
+                    <td>{{ ins.anneeUniversitaire }}</td>
+                    <td>Année {{ ins.anneeThese }}</td>
+                    <td>{{ ins.dateSoumission | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="getStatusBadge(ins.statut).class">
+                            {{ getStatusBadge(ins.statut).text }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="comment-text" [title]="ins.motifRejet || ins.commentaireAdmin || ''">
+                            {{ ins.motifRejet || ins.commentaireAdmin || '-' }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && inscriptions.length === 0">
+        <span class="empty-icon">📝</span>
+        <h3>Aucune inscription trouvée</h3>
+        <p>Vous n'avez pas encore d'historique d'inscription.</p>
+    </div>
+
+    <!-- New Request Modal -->
+    <div class="modal-backdrop" *ngIf="showNewRequestModal" (click)="closeModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Nouvelle réinscription</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-alert">
+                    <span class="icon">ℹ️</span>
+                    <p>Vous allez soumettre une demande de réinscription pour l'année universitaire <strong>{{
+                            newInscription.anneeUniversitaire }}</strong>.</p>
+                </div>
+
+                <p>En confirmant, votre demande passera par le cycle de validation :</p>
+                <ul class="process-list">
+                    <li>1. Validation par votre directeur de thèse</li>
+                    <li>2. Validation administrative</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+                <button class="btn btn-primary" (click)="submitNewInscription()">Confirmer la demande</button>
+            </div>
+        </div>
+    </div>
+</div>

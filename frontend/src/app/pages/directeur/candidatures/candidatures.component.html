@@ -1,0 +1,83 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Candidatures à valider</h1>
+        <p>Affectez des sujets de thèse aux candidats validés</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="candidatures-grid" *ngIf="!loading && candidatures.length > 0">
+        <div class="candidature-card" *ngFor="let candidate of candidatures">
+            <div class="card-header">
+                <div class="avatar">{{ candidate.prenom?.charAt(0) }}{{ candidate.nom?.charAt(0) }}</div>
+                <div class="info">
+                    <h4>{{ candidate.prenom }} {{ candidate.nom }}</h4>
+                    <span>{{ candidate.email }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="doc-links">
+                    <span class="doc-link" *ngIf="candidate.cv">📄 CV disponible</span>
+                    <span class="doc-link" *ngIf="candidate.diplome">🎓 Diplôme disponible</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-success" (click)="openValidateModal(candidate)">✓ Valider</button>
+                <button class="btn btn-danger" (click)="openRejectModal(candidate)">✗ Refuser</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && candidatures.length === 0">
+        <span class="empty-icon">📋</span>
+        <h3>Aucune candidature en attente</h3>
+        <p>Vous n'avez pas de nouvelles candidatures à examiner.</p>
+    </div>
+
+    <!-- Validate Modal -->
+    <div class="modal-backdrop" *ngIf="showValidateModal" (click)="closeModals()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Valider la candidature</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Pour valider la candidature de <strong>{{ selectedCandidat?.prenom }} {{ selectedCandidat?.nom
+                        }}</strong>, veuillez définir son sujet de thèse :</p>
+                <div class="form-group">
+                    <label class="form-label">Sujet de thèse *</label>
+                    <textarea [(ngModel)]="sujetThese" class="form-control" rows="3"
+                        placeholder="Saisissez le sujet de thèse..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Annuler</button>
+                <button class="btn btn-primary" (click)="valider()" [disabled]="!sujetThese">Confirmer et
+                    Inscrire</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal-backdrop" *ngIf="showRejectModal" (click)="closeModals()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Refuser la candidature</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Motif du refus *</label>
+                    <textarea [(ngModel)]="motifRefus" class="form-control" rows="3"
+                        placeholder="Pourquoi refusez-vous cette candidature ?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Annuler</button>
+                <button class="btn btn-danger" (click)="rejeter()" [disabled]="!motifRefus">Confirmer le refus</button>
+            </div>
+        </div>
+    </div>
+</div>

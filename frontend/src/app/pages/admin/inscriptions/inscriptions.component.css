@@ -1,0 +1,38 @@
+.page-container {
+    padding: var(--spacing-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.type-badge {
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.type-badge.type-first {
+    background: var(--secondary-50);
+    color: var(--secondary-700);
+}
+
+.action-cell {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.loading-container,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-3xl);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    opacity: 0.5;
+    margin-bottom: var(--spacing-lg);
+}

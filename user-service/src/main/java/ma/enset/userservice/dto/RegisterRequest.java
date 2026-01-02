@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-// 👇 AJOUTE CETTE LIGNE : Cela empêche le crash si le frontend envoie des champs en trop
+// 👇 AJOUTE CETTE LIGNE : Cela empêche le crash si le frontend envoie des
+// champs en trop
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RegisterRequest {
 
@@ -35,6 +36,5 @@ public class RegisterRequest {
     @NotBlank(message = "Le prénom est obligatoire")
     private String prenom;
 
-    @NotBlank(message = "Le numéro de téléphone est obligatoire")
     private String telephone;
 }

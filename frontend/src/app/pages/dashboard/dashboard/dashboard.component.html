@@ -1,0 +1,245 @@
+<div class="dashboard">
+    <!-- Loading State -->
+    <div class="loading-overlay" *ngIf="loading">
+        <div class="loading-spinner"></div>
+        <p>Chargement...</p>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-content" *ngIf="!loading">
+
+        <!-- =========== ADMIN DASHBOARD =========== -->
+        <ng-container *ngIf="currentUser?.role === 'ADMIN'">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ stats.totalUsers }}</span>
+                        <span class="stat-label">Utilisateurs</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ stats.pendingCandidatures }}</span>
+                        <span class="stat-label">Candidatures en attente</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-success">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ stats.totalInscriptions }}</span>
+                        <span class="stat-label">Inscriptions</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-accent">
+                    <div class="stat-icon">🎓</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ stats.upcomingSoutenances }}</span>
+                        <span class="stat-label">Soutenances à venir</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section">
+                <h3 class="section-title">Actions rapides</h3>
+                <div class="actions-grid">
+                    <a routerLink="/admin/candidatures" class="action-card">
+                        <span class="action-icon">📋</span>
+                        <span class="action-label">Gérer les candidatures</span>
+                    </a>
+                    <a routerLink="/admin/inscriptions" class="action-card">
+                        <span class="action-icon">📝</span>
+                        <span class="action-label">Gérer les inscriptions</span>
+                    </a>
+                    <a routerLink="/admin/soutenances" class="action-card">
+                        <span class="action-icon">🎓</span>
+                        <span class="action-label">Gérer les soutenances</span>
+                    </a>
+                    <a routerLink="/admin/users" class="action-card">
+                        <span class="action-icon">👤</span>
+                        <span class="action-label">Gérer les utilisateurs</span>
+                    </a>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- =========== DIRECTEUR DASHBOARD =========== -->
+        <ng-container *ngIf="currentUser?.role === 'DIRECTEUR_THESE'">
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">👨‍🎓</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ directeurStats.mesDoctorants }}</span>
+                        <span class="stat-label">Mes Doctorants</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ directeurStats.candidaturesEnAttente }}</span>
+                        <span class="stat-label">Candidatures à valider</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-info">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ directeurStats.reinscriptionsEnAttente }}</span>
+                        <span class="stat-label">Réinscriptions en attente</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-accent">
+                    <div class="stat-icon">🎓</div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ directeurStats.soutenancesAValider }}</span>
+                        <span class="stat-label">Soutenances à valider</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Actions rapides</h3>
+                <div class="actions-grid">
+                    <a routerLink="/directeur/doctorants" class="action-card">
+                        <span class="action-icon">👨‍🎓</span>
+                        <span class="action-label">Voir mes doctorants</span>
+                    </a>
+                    <a routerLink="/directeur/candidatures" class="action-card">
+                        <span class="action-icon">📋</span>
+                        <span class="action-label">Candidatures à traiter</span>
+                    </a>
+                    <a routerLink="/directeur/reinscriptions" class="action-card">
+                        <span class="action-icon">📝</span>
+                        <span class="action-label">Réinscriptions</span>
+                    </a>
+                    <a routerLink="/directeur/soutenances" class="action-card">
+                        <span class="action-icon">🎓</span>
+                        <span class="action-label">Soutenances</span>
+                    </a>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- =========== DOCTORANT DASHBOARD =========== -->
+        <ng-container *ngIf="currentUser?.role === 'DOCTORANT'">
+            <!-- Progress Card -->
+            <div class="progress-card">
+                <div class="progress-header">
+                    <h3>Mon Parcours Doctoral</h3>
+                    <span class="badge badge-primary">Année {{ doctorantData.anneeThese }}/4</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress">
+                        <div class="progress-bar" [style.width.%]="doctorantData.progression"></div>
+                    </div>
+                    <span class="progress-text">{{ doctorantData.progression }}% complété</span>
+                </div>
+                <div class="progress-info">
+                    <div class="info-item">
+                        <span class="info-icon">🎯</span>
+                        <div>
+                            <span class="info-label">Prochain jalon</span>
+                            <span class="info-value">{{ doctorantData.prochainJalon }}</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">📚</span>
+                        <div>
+                            <span class="info-label">Publications</span>
+                            <span class="info-value">{{ doctorantData.publications }}</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">⏱️</span>
+                        <div>
+                            <span class="info-label">Heures de formation</span>
+                            <span class="info-value">{{ doctorantData.heuresFormation }}h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thesis Info -->
+            <div class="thesis-card" *ngIf="currentUser?.titreThese">
+                <h4>📖 Ma Thèse</h4>
+                <p class="thesis-title">{{ currentUser?.titreThese }}</p>
+            </div>
+
+            <div class="stats-grid stats-small">
+                <a routerLink="/doctorant/inscriptions" class="action-card">
+                    <span class="action-icon">📝</span>
+                    <span class="action-label">Mes Inscriptions</span>
+                </a>
+                <a routerLink="/doctorant/soutenance" class="action-card">
+                    <span class="action-icon">🎓</span>
+                    <span class="action-label">Ma Soutenance</span>
+                </a>
+                <a routerLink="/doctorant/documents" class="action-card">
+                    <span class="action-icon">📄</span>
+                    <span class="action-label">Mes Documents</span>
+                </a>
+            </div>
+        </ng-container>
+
+        <!-- =========== CANDIDAT DASHBOARD =========== -->
+        <ng-container *ngIf="currentUser?.role === 'CANDIDAT'">
+            <div class="status-card" [ngClass]="getStatusClass()">
+                <div class="status-header">
+                    <span class="status-icon">📋</span>
+                    <h3>Statut de ma candidature</h3>
+                </div>
+                <div class="status-content">
+                    <span class="status-badge" [ngClass]="getStatusClass()">{{ getStatusText() }}</span>
+                    <p class="status-message" *ngIf="currentUser?.etat === 'EN_ATTENTE_ADMIN'">
+                        Votre dossier est en cours d'examen par l'administration. Vous recevrez une notification dès
+                        qu'une décision sera prise.
+                    </p>
+                    <p class="status-message" *ngIf="currentUser?.etat === 'EN_ATTENTE_DIRECTEUR'">
+                        Votre candidature a été pré-validée. Elle est maintenant en attente de validation par votre
+                        directeur de thèse.
+                    </p>
+                    <p class="status-message error" *ngIf="currentUser?.motifRefus">
+                        <strong>Motif du refus:</strong> {{ currentUser?.motifRefus }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="info-cards">
+                <div class="info-card">
+                    <span class="info-icon">👤</span>
+                    <h4>Mes Informations</h4>
+                    <p><strong>Nom:</strong> {{ currentUser?.nom }} {{ currentUser?.prenom }}</p>
+                    <p><strong>Email:</strong> {{ currentUser?.email }}</p>
+                    <p><strong>Matricule:</strong> {{ currentUser?.matricule }}</p>
+                </div>
+                <div class="info-card">
+                    <span class="info-icon">📁</span>
+                    <h4>Mon Dossier</h4>
+                    <p><strong>CV:</strong> {{ currentUser?.cv ? '✅ Téléchargé' : '❌ Non fourni' }}</p>
+                    <p><strong>Diplôme:</strong> {{ currentUser?.diplome ? '✅ Téléchargé' : '❌ Non fourni' }}</p>
+                    <p><strong>Lettre:</strong> {{ currentUser?.lettreMotivation ? '✅ Téléchargé' : '➖ Optionnel' }}</p>
+                </div>
+            </div>
+        </ng-container>
+
+        <!-- =========== RECENT ACTIVITIES (All roles) =========== -->
+        <div class="section" *ngIf="recentActivities.length > 0">
+            <h3 class="section-title">Activités récentes</h3>
+            <div class="activities-list">
+                <div class="activity-item" *ngFor="let activity of recentActivities">
+                    <div class="activity-icon" [ngClass]="'activity-' + activity.type">
+                        {{ activity.icon }}
+                    </div>
+                    <div class="activity-content">
+                        <span class="activity-title">{{ activity.title }}</span>
+                        <span class="activity-desc">{{ activity.description }}</span>
+                    </div>
+                    <span class="activity-time">{{ activity.time }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,49 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Soutenances à traiter</h1>
+        <p>Validez les prérequis des demandes de soutenance de vos doctorants</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && soutenances.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Doctorant</th>
+                    <th>Titre de la thèse</th>
+                    <th>Date demande</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let sout of soutenances">
+                    <td><strong>{{ sout.doctorantNom || 'Doctorant #' + sout.doctorantId }}</strong></td>
+                    <td class="title-cell"><span class="title-text" [title]="sout.titre">{{ sout.titre }}</span></td>
+                    <td>{{ sout.dateDemande | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="getStatusBadge(sout.statut).class">
+                            {{ getStatusBadge(sout.statut).text }}
+                        </span>
+                    </td>
+                    <td class="action-cell">
+                        <button class="btn btn-success btn-sm" *ngIf="sout.statut === 'SOUMIS'"
+                            (click)="validerPrerequis(sout.id!)">✓ Valider PR</button>
+                        <button class="btn btn-danger btn-sm" *ngIf="sout.statut === 'SOUMIS'"
+                            (click)="rejeter(sout.id!)">✗ Rejeter</button>
+                        <span *ngIf="sout.statut !== 'SOUMIS'">-</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && soutenances.length === 0">
+        <span class="empty-icon">🎓</span>
+        <h3>Aucune soutenance à traiter</h3>
+        <p>Toutes les demandes ont été traitées.</p>
+    </div>
+</div>

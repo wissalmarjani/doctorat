@@ -1,0 +1,88 @@
+<div class="auth-container">
+    <div class="auth-card animate-slide-up">
+        <!-- Left side - Branding -->
+        <div class="auth-brand">
+            <div class="brand-content">
+                <div class="brand-logo">🎓</div>
+                <h1 class="brand-title">Portail de Suivi du Doctorat</h1>
+                <p class="brand-subtitle">Plateforme de gestion du parcours doctoral</p>
+
+                <div class="welcome-message">
+                    <h3>Bienvenue sur votre espace doctoral</h3>
+                    <p>Accédez à tous vos outils de gestion et de suivi en un seul endroit. Profitez d'une expérience
+                        fluide et moderne pour piloter votre excellence académique.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side - Login Form -->
+        <div class="auth-form-section">
+            <div class="form-header">
+                <h2>Connexion</h2>
+                <p>Entrez vos identifiants pour accéder à votre espace</p>
+            </div>
+
+            <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+                <!-- Error Alert -->
+                <div class="alert alert-error" *ngIf="error">
+                    <span class="alert-icon">⚠️</span>
+                    <span>{{ error }}</span>
+                </div>
+
+                <!-- Matricule -->
+                <div class="form-group">
+                    <label class="form-label" for="username">Matricule</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" formControlName="username" class="form-control"
+                            [class.is-invalid]="f['username'].touched && f['username'].invalid"
+                            placeholder="Entrez votre matricule">
+                    </div>
+                    <div class="form-error" *ngIf="f['username'].touched && f['username'].errors?.['required']">
+                        Le matricule est requis
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input [type]="showPassword ? 'text' : 'password'" id="password" formControlName="password"
+                            class="form-control" [class.is-invalid]="f['password'].touched && f['password'].invalid"
+                            placeholder="Entrez votre mot de passe">
+                        <button type="button" class="toggle-password" (click)="togglePassword()">
+                            {{ showPassword ? '🙈' : '👁️' }}
+                        </button>
+                    </div>
+                    <div class="form-error" *ngIf="f['password'].touched && f['password'].errors?.['required']">
+                        Le mot de passe est requis
+                    </div>
+                </div>
+
+                <!-- Remember & Forgot -->
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox">
+                        <span class="checkmark"></span>
+                        Se souvenir de moi
+                    </label>
+                    <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary btn-lg btn-block"
+                    [disabled]="loading || loginForm.invalid">
+                    <span *ngIf="!loading">Se connecter</span>
+                    <span *ngIf="loading" class="loading-spinner"></span>
+                </button>
+
+                <!-- Register Link -->
+                <p class="register-link">
+                    Pas encore de compte ?
+                    <a routerLink="/register">Créer un compte</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>

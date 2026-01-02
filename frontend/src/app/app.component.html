@@ -1,0 +1,15 @@
+<div class="app-container" [class.auth-layout]="isAuthPage">
+  <!-- Sidebar (for authenticated users) -->
+  <app-sidebar *ngIf="isLoggedIn && !isAuthPage"></app-sidebar>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.with-sidebar]="isLoggedIn && !isAuthPage">
+    <!-- Header (for authenticated users) -->
+    <app-header *ngIf="isLoggedIn && !isAuthPage"></app-header>
+
+    <!-- Router Outlet -->
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

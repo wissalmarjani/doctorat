@@ -1,0 +1,77 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Gestion des Soutenances</h1>
+        <p>Autorisez les soutenances et gérez les jurys</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && soutenances.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Doctorant</th>
+                    <th>Titre</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let sout of soutenances">
+                    <td><strong>{{ sout.doctorantNom || 'Doctorant #' + sout.doctorantId }}</strong></td>
+                    <td class="title-cell"><span class="title-text" [title]="sout.titre">{{ sout.titre }}</span></td>
+                    <td>
+                        <span class="badge" [ngClass]="getStatusBadge(sout.statut).class">
+                            {{ getStatusBadge(sout.statut).text }}
+                        </span>
+                    </td>
+                    <td>{{ (sout.dateSoutenance | date:'dd/MM/yyyy') || '-' }}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-success btn-sm" *ngIf="sout.statut === 'PREREQUIS_VALIDES'"
+                            (click)="autoriser(sout.id!)">✓ Autoriser</button>
+                        <button class="btn btn-primary btn-sm"
+                            *ngIf="sout.statut === 'AUTORISE' || sout.statut === 'PREREQUIS_VALIDES'"
+                            (click)="openJuryModal(sout)">👥 Jury</button>
+                        <span *ngIf="sout.statut !== 'PREREQUIS_VALIDES' && sout.statut !== 'AUTORISE'">-</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && soutenances.length === 0">
+        <span class="empty-icon">🎓</span>
+        <h3>Aucune soutenance</h3>
+        <p>Il n'y a aucune demande de soutenance dans le système.</p>
+    </div>
+
+    <!-- Jury Modal -->
+    <div class="modal-backdrop" *ngIf="showJuryModal" (click)="showJuryModal = false">
+        <div class="modal modal-lg" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Composition du Jury</h3>
+                <button class="btn btn-ghost btn-icon" (click)="showJuryModal = false">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Affectez des professeurs au jury de soutenance de <strong>{{ selectedSoutenance?.doctorantNom
+                        }}</strong>.</p>
+
+                <div class="prof-list">
+                    <div class="prof-card" *ngFor="let prof of jurysDisponibles">
+                        <div class="prof-info">
+                            <strong>{{ prof.prenom }} {{ prof.nom }}</strong>
+                            <span>{{ prof.specialite }} - {{ prof.etablissement }}</span>
+                        </div>
+                        <button class="btn btn-outline btn-sm" (click)="ajouterMembre(prof)">Ajouter</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" (click)="showJuryModal = false">Terminer</button>
+            </div>
+        </div>
+    </div>
+</div>

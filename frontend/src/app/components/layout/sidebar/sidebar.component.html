@@ -1,0 +1,49 @@
+<aside class="sidebar" [class.collapsed]="isCollapsed">
+  <!-- Header -->
+  <div class="sidebar-header">
+    <div class="logo" *ngIf="!isCollapsed">
+      <span class="logo-icon">🎓</span>
+      <span class="logo-text">Portail Doctorat</span>
+    </div>
+    <button class="toggle-btn" (click)="toggleSidebar()">
+      {{ isCollapsed ? '→' : '←' }}
+    </button>
+  </div>
+
+  <!-- User Profile -->
+  <div class="user-profile" *ngIf="currentUser">
+    <div class="avatar">{{ getInitials(currentUser) }}</div>
+    <div class="user-info" *ngIf="!isCollapsed">
+      <span class="user-name">{{ currentUser.prenom }} {{ currentUser.nom }}</span>
+      <span class="user-role">{{ currentUser.role | titlecase }}</span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li *ngFor="let item of menuItems" class="nav-item">
+        <a 
+          [routerLink]="item.route" 
+          class="nav-link"
+          [class.active]="isActive(item.route)"
+          [title]="item.label">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-label" *ngIf="!isCollapsed">{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <a routerLink="/profile" class="nav-link" title="Profil">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label" *ngIf="!isCollapsed">Paramètres</span>
+    </a>
+    <button class="nav-link logout-btn" (click)="logout()" title="Déconnexion">
+      <span class="nav-icon">🚪</span>
+      <span class="nav-label" *ngIf="!isCollapsed">Déconnexion</span>
+    </button>
+  </div>
+</aside>

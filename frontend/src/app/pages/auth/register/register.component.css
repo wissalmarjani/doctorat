@@ -1,0 +1,258 @@
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-hero);
+    padding: var(--spacing-xl);
+}
+
+.register-card {
+    width: 100%;
+    max-width: 700px;
+    background: white;
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-2xl);
+}
+
+/* Header */
+.register-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: var(--spacing-lg);
+    color: var(--primary-500);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.logo-section .logo {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--spacing-md);
+}
+
+.logo-section h1 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-xs);
+}
+
+.logo-section p {
+    color: var(--neutral-500);
+}
+
+/* Steps Indicator */
+.steps-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--spacing-2xl);
+    gap: var(--spacing-sm);
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--neutral-200);
+    color: var(--neutral-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all var(--transition-base);
+}
+
+.step.active .step-number {
+    background: var(--primary-500);
+    color: white;
+}
+
+.step.completed .step-number {
+    background: var(--success-500);
+    color: white;
+}
+
+.step-label {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+    white-space: nowrap;
+}
+
+.step.active .step-label {
+    color: var(--primary-600);
+    font-weight: 500;
+}
+
+.step-line {
+    width: 60px;
+    height: 3px;
+    background: var(--neutral-200);
+    border-radius: var(--radius-full);
+    margin-bottom: 24px;
+}
+
+.step-line.active {
+    background: var(--success-500);
+}
+
+/* Form */
+.register-form {
+    margin-top: var(--spacing-xl);
+}
+
+.form-step {
+    animation: fadeIn 0.3s ease;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+}
+
+/* Upload Section */
+.upload-section {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-lg);
+}
+
+.upload-card {
+    background: var(--neutral-50);
+    border: 2px dashed var(--neutral-300);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.upload-card:hover {
+    border-color: var(--primary-400);
+    background: var(--primary-50);
+}
+
+.upload-card.uploaded {
+    border-color: var(--success-400);
+    background: var(--success-50);
+    border-style: solid;
+}
+
+.upload-icon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.upload-card h4 {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-xs);
+}
+
+.upload-card p {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+    margin-bottom: var(--spacing-md);
+    word-break: break-all;
+}
+
+.upload-btn {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--primary-500);
+    color: white;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.upload-card.uploaded .upload-btn {
+    background: var(--success-500);
+}
+
+.upload-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-2xl);
+}
+
+.form-actions .btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+.form-actions .btn:only-child {
+    max-width: none;
+}
+
+/* Login Link */
+.login-link {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+    color: var(--neutral-600);
+}
+
+.login-link a {
+    color: var(--primary-500);
+    font-weight: 600;
+}
+
+/* Loading */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .register-card {
+        padding: var(--spacing-lg);
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .upload-section {
+        grid-template-columns: 1fr;
+    }
+
+    .steps-indicator {
+        flex-wrap: wrap;
+    }
+
+    .step-line {
+        display: none;
+    }
+
+    .step-label {
+        display: none;
+    }
+}

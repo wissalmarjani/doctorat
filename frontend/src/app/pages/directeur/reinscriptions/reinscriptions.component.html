@@ -1,0 +1,46 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Réinscriptions en attente</h1>
+        <p>Validez ou rejetez les demandes de réinscription de vos doctorants</p>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && reinscriptions.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Doctorant</th>
+                    <th>Année Univ.</th>
+                    <th>Année Thèse</th>
+                    <th>Date Soumission</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let ins of reinscriptions">
+                    <td>
+                        <div class="user-cell">
+                            <strong>{{ ins.doctorantNom || 'Doctorant #' + ins.doctorantId }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ ins.anneeUniversitaire }}</td>
+                    <td>Année {{ ins.anneeThese }}</td>
+                    <td>{{ ins.dateSoumission | date:'dd/MM/yyyy' }}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-success btn-sm" (click)="valider(ins.id!)">✓ Valider</button>
+                        <button class="btn btn-danger btn-sm" (click)="rejeter(ins.id!)">✗ Rejeter</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && reinscriptions.length === 0">
+        <span class="empty-icon">📝</span>
+        <h3>Aucune réinscription en attente</h3>
+        <p>Toutes les demandes ont été traitées.</p>
+    </div>
+</div>

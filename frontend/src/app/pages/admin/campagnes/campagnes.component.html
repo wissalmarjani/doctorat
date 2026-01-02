@@ -1,0 +1,96 @@
+<div class="page-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Campagnes d'inscription</h1>
+            <p>Gérez les périodes d'inscription et de réinscription</p>
+        </div>
+        <button class="btn btn-primary" (click)="openModal()">
+            <span class="icon">➕</span> Nouvelle campagne
+        </button>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && campagnes.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Date Début</th>
+                    <th>Date Fin</th>
+                    <th>État</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let camp of campagnes">
+                    <td><strong>{{ camp.titre }}</strong></td>
+                    <td>{{ camp.dateOuverture | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ camp.dateFermeture | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <span class="badge" [class.badge-success]="camp.active" [class.badge-neutral]="!camp.active">
+                            {{ camp.active ? 'Active' : 'Inactive' }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" (click)="toggleActive(camp)">
+                            {{ camp.active ? 'Désactiver' : 'Activer' }}
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && campagnes.length === 0">
+        <span class="empty-icon">📅</span>
+        <h3>Aucune campagne créée</h3>
+        <p>Commencez par créer une nouvelle période d'inscription.</p>
+    </div>
+
+    <!-- New Campagne Modal -->
+    <div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Nouvelle campagne</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Titre de la campagne *</label>
+                    <input type="text" [(ngModel)]="newCampagne.titre" class="form-control"
+                        placeholder="Ex: Campagne d'automne 2024">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Année Universitaire *</label>
+                    <input type="text" [(ngModel)]="newCampagne.anneeUniversitaire" class="form-control"
+                        placeholder="Ex: 2024/2025">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date d'ouverture *</label>
+                        <input type="date" [(ngModel)]="newCampagne.dateOuverture" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date de fermeture *</label>
+                        <input type="date" [(ngModel)]="newCampagne.dateFermeture" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" [(ngModel)]="newCampagne.active">
+                        <span class="checkmark"></span>
+                        Activer immédiatement la campagne
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+                <button class="btn btn-primary" (click)="saveCampagne()" [disabled]="!newCampagne.titre">Créer la
+                    campagne</button>
+            </div>
+        </div>
+    </div>
+</div>

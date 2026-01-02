@@ -1,0 +1,233 @@
+<div class="page-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Gestion des Candidatures</h1>
+            <p>Examinez et traitez les candidatures au doctorat</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat-mini">
+                <span class="stat-value">{{ candidatures.length }}</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-mini stat-warning">
+                <span class="stat-value">{{ getPendingCount() }}</span>
+                <span class="stat-label">En attente</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+                placeholder="Rechercher par nom, email, matricule..." class="form-control">
+        </div>
+        <div class="filter-group">
+            <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()" class="form-control">
+                <option value="all">Tous les statuts</option>
+                <option value="EN_ATTENTE_ADMIN">En attente Admin</option>
+                <option value="EN_ATTENTE_DIRECTEUR">En attente Directeur</option>
+                <option value="VALIDE">Validé</option>
+                <option value="REFUSE">Refusé</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+        <p>Chargement des candidatures...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && filteredCandidatures.length === 0">
+        <span class="empty-icon">📋</span>
+        <h3>Aucune candidature trouvée</h3>
+        <p *ngIf="searchTerm || filterStatus !== 'all'">Essayez de modifier vos filtres de recherche</p>
+        <p *ngIf="!searchTerm && filterStatus === 'all'">Aucune candidature n'a été soumise pour le moment</p>
+    </div>
+
+    <!-- Candidatures Grid -->
+    <div class="candidatures-grid" *ngIf="!loading && filteredCandidatures.length > 0">
+        <div class="candidature-card" *ngFor="let candidat of filteredCandidatures">
+            <div class="card-header">
+                <div class="avatar">{{ getInitials(candidat) }}</div>
+                <div class="user-info">
+                    <h4>{{ candidat.prenom }} {{ candidat.nom }}</h4>
+                    <span class="matricule">{{ candidat.matricule }}</span>
+                </div>
+                <span class="badge" [ngClass]="getStatusBadge(candidat.etat).class">
+                    {{ getStatusBadge(candidat.etat).text }}
+                </span>
+            </div>
+
+            <div class="card-body">
+                <div class="info-row">
+                    <span class="info-icon">📧</span>
+                    <span>{{ candidat.email }}</span>
+                </div>
+                <div class="info-row" *ngIf="candidat.telephone">
+                    <span class="info-icon">📞</span>
+                    <span>{{ candidat.telephone }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-icon">📅</span>
+                    <span>Inscrit le {{ candidat.createdAt | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="documents">
+                    <span class="doc-badge" [class.uploaded]="candidat.cv">📄 CV</span>
+                    <span class="doc-badge" [class.uploaded]="candidat.diplome">🎓 Diplôme</span>
+                    <span class="doc-badge" [class.uploaded]="candidat.lettreMotivation">✉️ Lettre</span>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <button class="btn btn-ghost btn-sm" (click)="openDetailsModal(candidat)">
+                    👁️ Voir
+                </button>
+                <button class="btn btn-success btn-sm" (click)="openValidateModal(candidat)"
+                    *ngIf="candidat.etat === 'EN_ATTENTE_ADMIN'">
+                    ✓ Valider
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="openRejectModal(candidat)"
+                    *ngIf="candidat.etat === 'EN_ATTENTE_ADMIN'">
+                    ✗ Refuser
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validate Modal -->
+    <div class="modal-backdrop" *ngIf="showValidateModal" (click)="closeModals()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Valider la candidature</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Vous allez valider la candidature de <strong>{{ selectedCandidat?.prenom }} {{ selectedCandidat?.nom
+                        }}</strong>.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Assigner un directeur de thèse (optionnel)</label>
+                    <select [(ngModel)]="selectedDirecteurId" class="form-control">
+                        <option [ngValue]="null">-- Sélectionner plus tard --</option>
+                        <option *ngFor="let dir of directeurs" [ngValue]="dir.id">
+                            {{ dir.prenom }} {{ dir.nom }}
+                        </option>
+                    </select>
+                    <span class="form-hint">Le candidat sera notifié de cette assignation</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Annuler</button>
+                <button class="btn btn-success" (click)="validateCandidat()">Confirmer la validation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal-backdrop" *ngIf="showRejectModal" (click)="closeModals()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Refuser la candidature</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Vous allez refuser la candidature de <strong>{{ selectedCandidat?.prenom }} {{ selectedCandidat?.nom
+                        }}</strong>.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Motif du refus *</label>
+                    <textarea [(ngModel)]="motifRefus" class="form-control" rows="4"
+                        placeholder="Veuillez indiquer le motif du refus..." required></textarea>
+                    <span class="form-hint">Ce motif sera communiqué au candidat</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Annuler</button>
+                <button class="btn btn-danger" (click)="rejectCandidat()" [disabled]="!motifRefus">
+                    Confirmer le refus
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal-backdrop" *ngIf="showDetailsModal" (click)="closeModals()">
+        <div class="modal modal-lg" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Détails du candidat</h3>
+                <button class="btn btn-ghost btn-icon" (click)="closeModals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="details-header">
+                    <div class="avatar avatar-xl">{{ getInitials(selectedCandidat!) }}</div>
+                    <div>
+                        <h2>{{ selectedCandidat?.prenom }} {{ selectedCandidat?.nom }}</h2>
+                        <span class="badge" [ngClass]="getStatusBadge(selectedCandidat?.etat || '').class">
+                            {{ getStatusBadge(selectedCandidat?.etat || '').text }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Matricule</span>
+                        <span class="detail-value">{{ selectedCandidat?.matricule }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ selectedCandidat?.email }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Téléphone</span>
+                        <span class="detail-value">{{ selectedCandidat?.telephone || 'Non renseigné' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date d'inscription</span>
+                        <span class="detail-value">{{ selectedCandidat?.createdAt | date:'dd/MM/yyyy à HH:mm' }}</span>
+                    </div>
+                </div>
+
+                <h4>Documents soumis</h4>
+                <div class="documents-list">
+                    <div class="document-item" [class.available]="selectedCandidat?.cv">
+                        <span class="doc-icon">📄</span>
+                        <span class="doc-name">CV</span>
+                        <span class="doc-status">{{ selectedCandidat?.cv ? 'Téléchargé' : 'Non fourni' }}</span>
+                    </div>
+                    <div class="document-item" [class.available]="selectedCandidat?.diplome">
+                        <span class="doc-icon">🎓</span>
+                        <span class="doc-name">Diplôme</span>
+                        <span class="doc-status">{{ selectedCandidat?.diplome ? 'Téléchargé' : 'Non fourni' }}</span>
+                    </div>
+                    <div class="document-item" [class.available]="selectedCandidat?.lettreMotivation">
+                        <span class="doc-icon">✉️</span>
+                        <span class="doc-name">Lettre de motivation</span>
+                        <span class="doc-status">{{ selectedCandidat?.lettreMotivation ? 'Téléchargé' : 'Non fourni'
+                            }}</span>
+                    </div>
+                </div>
+
+                <div class="motif-refus" *ngIf="selectedCandidat?.motifRefus">
+                    <h4>⚠️ Motif de refus</h4>
+                    <p>{{ selectedCandidat?.motifRefus }}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" (click)="closeModals()">Fermer</button>
+                <button class="btn btn-success" *ngIf="selectedCandidat?.etat === 'EN_ATTENTE_ADMIN'"
+                    (click)="closeModals(); openValidateModal(selectedCandidat!)">
+                    ✓ Valider
+                </button>
+                <button class="btn btn-danger" *ngIf="selectedCandidat?.etat === 'EN_ATTENTE_ADMIN'"
+                    (click)="closeModals(); openRejectModal(selectedCandidat!)">
+                    ✗ Refuser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

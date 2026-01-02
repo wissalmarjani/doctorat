@@ -1,0 +1,338 @@
+.page-container {
+    padding: var(--spacing-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-2xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.header-content h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-xs);
+}
+
+.header-content p {
+    color: var(--neutral-500);
+}
+
+.header-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.stat-mini {
+    background: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+}
+
+.stat-mini .stat-value {
+    display: block;
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.stat-mini .stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+}
+
+.stat-mini.stat-warning .stat-value {
+    color: var(--warning-600);
+}
+
+/* Filters Bar */
+.filters-bar {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+
+.filters-bar .search-box {
+    flex: 1;
+    min-width: 280px;
+    position: relative;
+}
+
+.filters-bar .search-icon {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.filters-bar .form-control {
+    padding-left: 40px;
+}
+
+.filter-group {
+    min-width: 200px;
+}
+
+/* Loading & Empty State */
+.loading-container,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl);
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--neutral-600);
+}
+
+.empty-state p {
+    color: var(--neutral-500);
+}
+
+/* Candidatures Grid */
+.candidatures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.candidature-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.candidature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.candidature-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--neutral-50);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.candidature-card .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.candidature-card .user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.candidature-card .user-info h4 {
+    margin: 0;
+    font-size: var(--font-size-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.candidature-card .matricule {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+}
+
+.candidature-card .card-body {
+    padding: var(--spacing-lg);
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--neutral-600);
+}
+
+.info-icon {
+    flex-shrink: 0;
+}
+
+.documents {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.doc-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--neutral-100);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+}
+
+.doc-badge.uploaded {
+    background: var(--success-100);
+    color: var(--success-600);
+}
+
+.candidature-card .card-footer {
+    display: flex;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--neutral-50);
+    border-top: 1px solid var(--neutral-200);
+}
+
+/* Modal Large */
+.modal-lg {
+    max-width: 700px;
+}
+
+/* Details Modal */
+.details-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.details-header h2 {
+    margin: 0;
+    margin-bottom: var(--spacing-xs);
+}
+
+.avatar-xl {
+    width: 80px;
+    height: 80px;
+    font-size: var(--font-size-2xl);
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-500);
+    margin-bottom: var(--spacing-xs);
+}
+
+.detail-value {
+    font-weight: 500;
+    color: var(--neutral-800);
+}
+
+.modal-body h4 {
+    margin-bottom: var(--spacing-md);
+    color: var(--neutral-700);
+}
+
+.documents-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xl);
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--neutral-100);
+    border-radius: var(--radius-lg);
+}
+
+.document-item.available {
+    background: var(--success-50);
+}
+
+.doc-icon {
+    font-size: 1.25rem;
+}
+
+.doc-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.doc-status {
+    font-size: var(--font-size-sm);
+    color: var(--neutral-500);
+}
+
+.document-item.available .doc-status {
+    color: var(--success-600);
+}
+
+.motif-refus {
+    background: var(--error-50);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--error-500);
+}
+
+.motif-refus h4 {
+    color: var(--error-600);
+    margin-bottom: var(--spacing-sm);
+}
+
+.motif-refus p {
+    margin: 0;
+    color: var(--error-700);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .candidatures-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}

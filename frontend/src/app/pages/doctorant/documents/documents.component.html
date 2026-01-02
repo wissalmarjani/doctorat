@@ -1,0 +1,31 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Mes Documents</h1>
+        <p>Téléchargez vos attestations et documents officiels</p>
+    </div>
+
+    <div class="documents-grid">
+        <div class="document-card">
+            <span class="icon">📜</span>
+            <h4>Attestation d'inscription</h4>
+            <p>Document officiel confirmant votre inscription pour l'année en cours.</p>
+            <button class="btn btn-primary" (click)="downloadAttestation()" [disabled]="loading">
+                {{ loading ? 'Génération...' : 'Télécharger PDF' }}
+            </button>
+        </div>
+
+        <div class="document-card">
+            <span class="icon">📊</span>
+            <h4>Relevé de notes</h4>
+            <p>Votre relevé de notes et évaluations pédagogiques.</p>
+            <button class="btn btn-secondary" (click)="downloadReleve()">Télécharger</button>
+        </div>
+
+        <div class="document-card">
+            <span class="icon">📅</span>
+            <h4>Carte d'étudiant</h4>
+            <p>Demander la réédition de votre carte d'étudiant numérique.</p>
+            <button class="btn btn-secondary" disabled>Bientôt disponible</button>
+        </div>
+    </div>
+</div>

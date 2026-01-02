@@ -1,0 +1,80 @@
+<div class="page-container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Gestion des Utilisateurs</h1>
+            <p>Gérez tous les utilisateurs de la plateforme</p>
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Rechercher..."
+                class="form-control">
+        </div>
+        <select [(ngModel)]="filterRole" (ngModelChange)="applyFilters()" class="form-control">
+            <option value="all">Tous les rôles</option>
+            <option value="ADMIN">Administrateurs</option>
+            <option value="DIRECTEUR_THESE">Directeurs</option>
+            <option value="DOCTORANT">Doctorants</option>
+            <option value="CANDIDAT">Candidats</option>
+        </select>
+    </div>
+
+    <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && filteredUsers.length > 0">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>État</th>
+                    <th>Date d'inscription</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let user of filteredUsers">
+                    <td>
+                        <div class="user-cell">
+                            <div class="avatar-sm">{{ user.prenom?.charAt(0) }}{{ user.nom?.charAt(0) }}</div>
+                            <div>
+                                <strong>{{ user.prenom }} {{ user.nom }}</strong>
+                                <span class="matricule">{{ user.matricule }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="getRoleBadge(user.role).class">
+                            {{ getRoleBadge(user.role).text }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge" [ngClass]="user.enabled ? 'badge-success' : 'badge-error'">
+                            {{ user.enabled ? 'Actif' : 'Inactif' }}
+                        </span>
+                    </td>
+                    <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-ghost btn-sm" title="Voir">👁️</button>
+                            <button class="btn btn-ghost btn-sm" title="Modifier">✏️</button>
+                            <button class="btn btn-ghost btn-sm" (click)="deleteUser(user.id!)"
+                                title="Supprimer">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && filteredUsers.length === 0">
+        <span class="empty-icon">👥</span>
+        <h3>Aucun utilisateur trouvé</h3>
+    </div>
+</div>

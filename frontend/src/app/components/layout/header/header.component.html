@@ -1,0 +1,63 @@
+<header class="header">
+    <div class="header-left">
+        <h1 class="page-title">Bienvenue, {{ currentUser?.prenom }} !</h1>
+        <span class="badge" [ngClass]="getRoleBadgeClass()">
+            {{ currentUser?.role?.replace('_', ' ') | titlecase }}
+        </span>
+    </div>
+
+    <div class="header-right">
+        <!-- Search -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher..." class="search-input">
+        </div>
+
+        <!-- Notifications -->
+        <div class="dropdown">
+            <button class="icon-btn" (click)="toggleNotifications()">
+                <span class="icon">🔔</span>
+                <span class="badge-count" *ngIf="notifications.length > 0">{{ notifications.length }}</span>
+            </button>
+            <div class="dropdown-menu" *ngIf="showNotifications">
+                <div class="dropdown-header">
+                    <span>Notifications</span>
+                    <a href="#">Tout voir</a>
+                </div>
+                <div class="dropdown-body" *ngIf="notifications.length === 0">
+                    <p class="empty-text">Aucune notification</p>
+                </div>
+                <div class="dropdown-body" *ngIf="notifications.length > 0">
+                    <div class="notification-item" *ngFor="let notif of notifications">
+                        <span class="notif-icon">📌</span>
+                        <div class="notif-content">
+                            <p class="notif-title">{{ notif.titre }}</p>
+                            <span class="notif-time">{{ notif.createdAt | date:'short' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Menu -->
+        <div class="dropdown">
+            <button class="user-btn" (click)="toggleUserMenu()">
+                <div class="avatar-sm">{{ getInitials(currentUser) }}</div>
+                <span class="user-name">{{ currentUser?.prenom }}</span>
+                <span class="chevron">▼</span>
+            </button>
+            <div class="dropdown-menu user-dropdown" *ngIf="showUserMenu">
+                <a routerLink="/profile" class="dropdown-item">
+                    <span>👤</span> Mon Profil
+                </a>
+                <a routerLink="/settings" class="dropdown-item">
+                    <span>⚙️</span> Paramètres
+                </a>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item logout" (click)="logout()">
+                    <span>🚪</span> Déconnexion
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
